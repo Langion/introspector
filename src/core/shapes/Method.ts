@@ -61,6 +61,12 @@ export class Method<O extends string> {
     }
 
     private parseInputData(method: types.Method<O>) {
+        const hasParamsInPath = /[{}]/gm;
+
+        if (!hasParamsInPath.test(method.path)) {
+            return;
+        }
+
         const methodName = method.name[0].toUpperCase() + method.name.slice(1);
 
         const query = this.createQueryInterface(methodName);
