@@ -64,7 +64,7 @@ export class Interface<O extends string> {
     private parseMethod(shape: types.Interface<O>) {
         _.forEach(this.data.entity.Methods, (m) => {
             if ("JsonProperty" in m.Annotations) {
-                const jsonName = m.Annotations.JsonProperty.Items.value.Content;
+                const jsonName = m.Annotations.JsonProperty.Items.value.Content.trim() ;
                 let field = _.find(shape.fields, (f) => f.name === jsonName);
 
                 if (!field) {
@@ -125,12 +125,12 @@ export class Interface<O extends string> {
         const result: types.Field<O> = {
             comment,
             type,
-            name: field.Name,
+            name: field.Name.trim(),
             isDuplicate: false,
         };
 
         if ("JsonProperty" in field.Annotations) {
-            result.name = field.Annotations.JsonProperty.Items.value.Content;
+            result.name = field.Annotations.JsonProperty.Items.value.Content.trim();
         }
 
         if (!result.name) {
@@ -189,9 +189,9 @@ export class Interface<O extends string> {
             { name: what, found: false },
         );
 
-        const name = _.lowerFirst(result.name);
+        const finalName = _.lowerFirst(result.name);
 
-        return name;
+        return finalName;
     }
 
     private parseAccessor(name: string, accessor: langion.MethodEntity, shape: types.Interface<O>) {
@@ -215,7 +215,7 @@ export class Interface<O extends string> {
         });
 
         if (field) {
-            shape.fields[name] = field;
+            shape.fields[field.name] = field;
         }
     }
 
