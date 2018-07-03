@@ -25,6 +25,12 @@ export class Source<O extends string> {
             return;
         }
 
+        if (this.data.introspector.processedEntities.indexOf(entity) >= 0) {
+            return;
+        }
+
+        this.data.introspector.processedEntities.push(entity);
+
         switch (entity.Kind) {
             case langion.Kind.Class:
             case langion.Kind.Interface:
@@ -43,6 +49,7 @@ export class Source<O extends string> {
             entity: entity as langion.EnumEntity,
             introspection: this.data.introspection,
             usedIn: this.data.usedIn,
+            service: this.data.service,
         });
 
         enumeration.create();

@@ -24,6 +24,7 @@ export class Merger<O extends string> {
 
                     this.introspections[this.config.share!.origin].sources[shape.name] = {
                         origin: this.config.share!.origin,
+                        addedFrom: this.config.share!.origin,
                         shape,
                         usedIn: [],
                     };

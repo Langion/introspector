@@ -81,9 +81,12 @@ export class Method<O extends string> {
 
     private fillQuerySource(query: types.Interface<O>, method: types.Method<O>) {
         if (!_.isEmpty(query.fields)) {
+            const addedFrom = this.data.service.getOrigin();
+
             const source: types.Source<O> = {
                 shape: query,
                 usedIn: [],
+                addedFrom,
                 origin: this.data.controller.origin,
             };
 
@@ -104,7 +107,10 @@ export class Method<O extends string> {
 
     private fillParamsSource(params: types.Interface<O>, method: types.Method<O>) {
         if (!_.isEmpty(params.fields)) {
+            const addedFrom = this.data.service.getOrigin();
+
             const source: types.Source<O> = {
+                addedFrom,
                 origin: this.data.controller.origin,
                 shape: params,
                 usedIn: [],
@@ -161,7 +167,10 @@ export class Method<O extends string> {
             }
 
             if (field) {
-                field.comment = Comment.create({ entity: a, annotations: a.Annotations });
+                field.comment = Comment.create({
+                    entity: a,
+                    annotations: a.Annotations,
+                });
             }
         });
 
@@ -232,7 +241,10 @@ export class Method<O extends string> {
         const name = this.data.entity.Name;
 
         if (!this.data.controller.methods[name]) {
-            const comment = Comment.create({ entity: this.data.entity, annotations: this.data.entity.Annotations });
+            const comment = Comment.create({
+                entity: this.data.entity,
+                annotations: this.data.entity.Annotations,
+            });
 
             const params: types.Type<O> = {
                 name: "void",

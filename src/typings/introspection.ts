@@ -9,6 +9,7 @@ export interface Introspection<O extends string> {
 export interface Source<O extends string> {
     shape: Interface<O> | Enumeration;
     origin: O;
+    addedFrom: O;
     usedIn: Array<Type<O>>;
 }
 

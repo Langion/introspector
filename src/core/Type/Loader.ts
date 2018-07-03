@@ -34,20 +34,16 @@ export class Loader<O extends string> {
 
         const name = this.data.type.name;
 
-        if (introspection.sources[name]) {
-            introspection.sources[name].usedIn.push(this.data.type);
-        } else {
-            const source = new Source({
-                type: this.data.entity,
-                introspection,
-                introspector: this.data.introspector,
-                map: this.data.map,
-                service: this.data.service,
-                usedIn: this.data.type,
-            });
+        const source = new Source({
+            type: this.data.entity,
+            introspection,
+            introspector: this.data.introspector,
+            map: this.data.map,
+            service: this.data.service,
+            usedIn: this.data.type,
+        });
 
-            source.create();
-        }
+        source.create();
 
         const shape = this.loadInterface(introspection, name);
 

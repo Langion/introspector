@@ -1,12 +1,14 @@
 import * as langion from "@langion/langion";
 import * as _ from "lodash";
 import * as types from "../../typings";
+import { Service } from "../Service";
 import { Comment } from "./Comment";
 
 export interface EnumerationData<O extends string> {
     entity: langion.EnumEntity;
     introspection: types.Introspection<O>;
     usedIn: types.Type<O>;
+    service: Service<O>;
 }
 
 export class Enumeration<O extends string> {
@@ -39,8 +41,11 @@ export class Enumeration<O extends string> {
                 isDuplicate: false,
             };
 
+            const addedFrom = this.data.service.getOrigin();
+
             this.data.introspection.sources[name] = {
                 shape,
+                addedFrom,
                 origin: this.data.introspection.origin,
                 usedIn: [this.data.usedIn],
             };

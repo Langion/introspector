@@ -16,24 +16,21 @@ export interface InterfaceData<O extends string> {
 }
 
 export class Interface<O extends string> {
+    private names: Record<string, boolean> = {};
+
     constructor(private data: InterfaceData<O>) {}
 
     public create() {
         const name = this.data.entity.Name;
-
-        if (this.data.introspection.sources[name]) {
-            this.data.introspection.sources[name].usedIn.push(this.data.usedIn);
-            return;
-        }
-
-        const interfaze = this.getInterface(name);
-        const shape = interfaze.shape as types.Interface<O>;
+        const shape = this.getInterface(name);
 
         _.forEach(this.data.entity.Variables, (v) => (shape.variables[v.Name] = v.Name));
 
         this.parseFields(shape);
         this.parseMethod(shape);
         this.parseExtends(shape);
+
+        this.addToIntrospection(shape);
     }
 
     private parseExtends(shape: types.Interface<O>) {
@@ -64,11 +61,14 @@ export class Interface<O extends string> {
     private parseMethod(shape: types.Interface<O>) {
         _.forEach(this.data.entity.Methods, (m) => {
             if ("JsonProperty" in m.Annotations) {
-                const jsonName = m.Annotations.JsonProperty.Items.value.Content.trim() ;
+                const jsonName = m.Annotations.JsonProperty.Items.value.Content.trim();
                 let field = _.find(shape.fields, (f) => f.name === jsonName);
 
-                if (!field) {
-                    const comment = Comment.create({ entity: m, annotations: m.Annotations });
+                if (!field && !this.names[jsonName]) {
+                    const comment = Comment.create({
+                        entity: m,
+                        annotations: m.Annotations,
+                    });
 
                     const type = Type.create({
                         entity: m.Returns,
@@ -84,6 +84,7 @@ export class Interface<O extends string> {
                         type,
                     };
 
+                    this.names[jsonName] = true;
                     shape.fields[field.name] = field;
                 }
             }
@@ -100,20 +101,26 @@ export class Interface<O extends string> {
         }
 
         _.forEach(this.data.entity.Fields, (f) => {
-            const createdField = this.createField(f);
+            const fieldName = f.Name.trim();
+            const createdField = this.createField(f, fieldName);
 
             if (createdField) {
                 const field = _.find(shape.fields, (fi) => fi.name === createdField.name);
 
-                if (!field) {
+                if (!field && !this.names[createdField.name]) {
+                    this.names[createdField.name] = true;
+                    this.names[fieldName] = true;
                     shape.fields[createdField.name] = createdField;
                 }
             }
         });
     }
 
-    private createField(field: langion.FieldEntity) {
-        const comment = Comment.create({ entity: field, annotations: field.Annotations });
+    private createField(field: langion.FieldEntity, fieldName: string) {
+        const comment = Comment.create({
+            entity: field,
+            annotations: field.Annotations,
+        });
 
         const type = Type.create({
             entity: field.Type,
@@ -125,7 +132,7 @@ export class Interface<O extends string> {
         const result: types.Field<O> = {
             comment,
             type,
-            name: field.Name.trim(),
+            name: fieldName,
             isDuplicate: false,
         };
 
@@ -141,7 +148,10 @@ export class Interface<O extends string> {
     }
 
     private getInterface(name: string) {
-        const comment = Comment.create({ entity: this.data.entity, annotations: this.data.entity.Annotations });
+        const comment = Comment.create({
+            entity: this.data.entity,
+            annotations: this.data.entity.Annotations,
+        });
 
         const shape: types.Interface<O> = {
             name,
@@ -153,13 +163,51 @@ export class Interface<O extends string> {
             extends: {},
         };
 
-        this.data.introspection.sources[name] = {
+        return shape;
+    }
+
+    private addToIntrospection(shape: types.Interface<O>) {
+        const addedFrom = this.data.service.getOrigin();
+
+        const source: types.Source<O> = {
             origin: this.data.introspection.origin,
             usedIn: [this.data.usedIn],
+            addedFrom,
             shape,
         };
 
-        return this.data.introspection.sources[name];
+        if (this.data.introspection.sources[shape.name]) {
+            const alreadyAddedSource = this.data.introspection.sources[shape.name];
+
+            if (_.isEqual(alreadyAddedSource.shape, source.shape)) {
+                alreadyAddedSource.usedIn.push(this.data.usedIn);
+            } else {
+                this.handleSameSourceName(alreadyAddedSource, source);
+            }
+        } else {
+            this.data.introspection.sources[shape.name] = source;
+        }
+    }
+
+    private handleSameSourceName(alreadyAddedSource: types.Source<O>, sourceWantToAdd: types.Source<O>) {
+        const currentServiceParsing = this.data.service.getOrigin();
+
+        if (alreadyAddedSource.addedFrom === currentServiceParsing) {
+            // tslint:disable-next-line:no-console
+            console.error(
+                "There are two interfaces with the same name but with different shape in one origin.",
+                "The first one is used.",
+                alreadyAddedSource,
+                sourceWantToAdd,
+            );
+        } else {
+            if (sourceWantToAdd.origin === currentServiceParsing) {
+                this.data.introspection.sources[alreadyAddedSource.shape.name] = sourceWantToAdd;
+                const addedFromIntrospection = this.data.introspector.getIntrospection(alreadyAddedSource.addedFrom);
+                addedFromIntrospection.sources[alreadyAddedSource.shape.name] = alreadyAddedSource;
+                alreadyAddedSource.origin = alreadyAddedSource.addedFrom;
+            }
+        }
     }
 
     private parseJavaBeans(shape: types.Interface<O>) {
@@ -203,18 +251,22 @@ export class Interface<O extends string> {
             return;
         }
 
-        const field = this.createField({
-            Annotations: accessor.Annotations,
-            Canonical: accessor.Canonical,
-            Comment: accessor.Comment,
-            Kind: accessor.Kind,
-            Modifiers: accessor.Modifier,
-            Name: name,
-            Path: accessor.Path,
-            Type: accessor.Returns,
-        });
+        const field = this.createField(
+            {
+                Annotations: accessor.Annotations,
+                Canonical: accessor.Canonical,
+                Comment: accessor.Comment,
+                Kind: accessor.Kind,
+                Modifiers: accessor.Modifier,
+                Name: name,
+                Path: accessor.Path,
+                Type: accessor.Returns,
+            },
+            name,
+        );
 
-        if (field) {
+        if (field && !this.names[field.name]) {
+            this.names[field.name] = true;
             shape.fields[field.name] = field;
         }
     }
