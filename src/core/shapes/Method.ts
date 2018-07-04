@@ -61,12 +61,6 @@ export class Method<O extends string> {
     }
 
     private parseInputData(method: types.Method<O>) {
-        const hasParamsInPath = /[{}]/gm;
-
-        if (!hasParamsInPath.test(method.path)) {
-            return;
-        }
-
         const methodName = method.name[0].toUpperCase() + method.name.slice(1);
 
         const query = this.createQueryInterface(methodName);
@@ -77,6 +71,16 @@ export class Method<O extends string> {
 
         this.fillQuerySource(query, method);
         this.fillParamsSource(params, method);
+
+        const hasParamsInPath = /[{}]/gm;
+        const paramsNames = Object.keys(params.fields);
+        const hasParamsNotInPath = !hasParamsInPath.test(method.path) && paramsNames[0];
+        if (hasParamsNotInPath) {
+            const onlyOneParam = paramsNames[0];
+            method.path = `${method.path}/{${onlyOneParam}}`;
+        }
+
+        method.path = method.path.replace(/\/\//, "/");
     }
 
     private fillQuerySource(query: types.Interface<O>, method: types.Method<O>) {
