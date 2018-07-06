@@ -36,7 +36,7 @@ export class Service<O extends string> {
     }
 
     private queryRestControllers(langionData: langion.Langion): langion.ClassEntity[] {
-        const query = "$..Exports[?(@.Annotations.RestController != null)]";
+        const query = "$..Exports[?(@.Annotations.RestController != null || @.Annotations.Controller != null)]";
         const controllers: langion.ClassEntity[] = jp.query(langionData, query) as any;
         return controllers;
     }

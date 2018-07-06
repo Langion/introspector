@@ -124,7 +124,7 @@ export class Controller<O extends string> {
         if (_.lowerCase(name) !== _.lowerCase(introspection.origin)) {
             const originPosition = name.toLowerCase().indexOf(introspection.origin.toLowerCase());
 
-            if (originPosition >= 0) {
+            if (originPosition === 0) {
                 const nameWithoutOrigin = name.slice(introspection.origin.length);
                 const correctName = /[_A-Za-z][_0-9A-Za-z]*/;
 
