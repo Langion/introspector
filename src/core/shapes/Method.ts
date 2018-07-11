@@ -156,7 +156,7 @@ export class Method<O extends string> {
                 method.payload[type.name] = type;
             } else if ("RequestParam" in a.Annotations) {
                 const fieldName = a.Annotations.RequestParam.Items.value.Content || a.Name;
-                field = { name: fieldName, type, isDuplicate: false, comment: "" };
+                field = { name: fieldName, type, isDuplicate: false, isRequired: false, comment: "" };
                 query.fields[field.name] = field;
             } else if ("PathVariable" in a.Annotations) {
                 let pathName: string = a.Annotations.PathVariable.Items.value.Content || a.Name;
@@ -165,7 +165,7 @@ export class Method<O extends string> {
                     pathName = paramsInPath[currentParam];
                 }
 
-                field = { name: pathName, type, isDuplicate: false, comment: "" };
+                field = { name: pathName, type, isDuplicate: false, isRequired: true, comment: "" };
                 params.fields[field.name] = field;
                 currentParam++;
             }
@@ -196,7 +196,7 @@ export class Method<O extends string> {
                     origin: this.data.controller.origin,
                 };
 
-                field = { name: p, isDuplicate: false, type, comment: "" };
+                field = { name: p, isDuplicate: false, isRequired: true, type, comment: "" };
                 params.fields[field.name] = field;
             }
         });

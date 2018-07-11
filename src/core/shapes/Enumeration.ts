@@ -19,18 +19,17 @@ export class Enumeration<O extends string> {
 
         if (!this.data.introspection.sources[name]) {
             const comment = Comment.create({ entity: this.data.entity });
-            const values: Record<string, string> = {};
+            const values: Record<string, types.EnumValue> = {};
 
-            _.forEach(this.data.entity.Items, (item) => {
-                const num = parseFloat(item);
+            _.forEach(this.data.entity.Items, (value, key) => {
+                const num = parseFloat(key);
                 const isNumber = !isNaN(num);
-                let key = item;
 
                 if (isNumber) {
-                    key = `E${item}`;
+                    key = `E${value}`;
                 }
 
-                values[key] = item;
+                values[key] = { key, value };
             });
 
             const shape: types.Enumeration = {

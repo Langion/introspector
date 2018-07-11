@@ -23,6 +23,7 @@ export interface Interface<O extends string> extends Shape {
 export interface Field<O extends string> extends Shape {
     name: string;
     type: Type<O>;
+    isRequired: boolean;
 }
 export interface Generic<O extends string> extends Type<O> {
     position: number;
@@ -34,9 +35,14 @@ export interface Type<O extends string> extends Shape {
     origin: O;
 }
 
+export interface EnumValue {
+    key: string;
+    value: string;
+}
+
 export interface Enumeration extends Shape {
     kind: "Enumeration";
-    values: Record<string, string>;
+    values: Record<string, EnumValue>;
 }
 
 export interface Controller<O extends string> extends Shape {

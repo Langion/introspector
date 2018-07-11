@@ -4,6 +4,7 @@ import * as _ from "lodash";
 import { Introspector } from "../../Introspector";
 import * as types from "../../typings";
 import { Controller } from "../shapes/Controller";
+import { Type } from "../Type";
 
 export interface ServiceData<O extends string> {
     origin: types.Origin<O>;
@@ -19,6 +20,7 @@ export class Service<O extends string> {
         this.fillPaths(this.data.origin.langion.Modules);
         const controllers = this.queryRestControllers(this.data.origin.langion);
         controllers.forEach((c) => this.parseController(c));
+        this.loadAllEnums();
     }
 
     public getEntity(path: string) {
@@ -33,6 +35,26 @@ export class Service<O extends string> {
     private parseController(entity: langion.ClassEntity) {
         const controller = new Controller({ entity, introspector: this.data.introspector, service: this });
         controller.create();
+    }
+
+    private loadAllEnums() {
+        Object.keys(this.paths).forEach((key) => {
+            const entity = this.paths[key];
+
+            if (entity.Kind === langion.Kind.Enum) {
+                Type.create({
+                    entity: {
+                        ...entity,
+                        IsArray: false,
+                        IsParameter: false,
+                        Generics: {},
+                    },
+                    introspector: this.data.introspector,
+                    map: {},
+                    service: this,
+                });
+            }
+        });
     }
 
     private queryRestControllers(langionData: langion.Langion): langion.ClassEntity[] {

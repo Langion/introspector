@@ -77,8 +77,11 @@ export class Interface<O extends string> {
                         service: this.data.service,
                     });
 
+                    const isRequired = this.isRequired(m);
+
                     field = {
                         comment,
+                        isRequired,
                         isDuplicate: false,
                         name: jsonName,
                         type,
@@ -129,9 +132,12 @@ export class Interface<O extends string> {
             service: this.data.service,
         });
 
+        const isRequired = this.isRequired(field);
+
         const result: types.Field<O> = {
             comment,
             type,
+            isRequired,
             name: fieldName,
             isDuplicate: false,
         };
@@ -273,5 +279,17 @@ export class Interface<O extends string> {
 
     private isClassEntity(entity: langion.Entity): entity is langion.ClassEntity {
         return entity.Kind === langion.Kind.Class;
+    }
+
+    private isRequired(entity: langion.FieldEntity | langion.MethodEntity) {
+        let result = false;
+
+        if ("NotNull" in entity.Annotations) {
+            result = true;
+        } else if ("Column" in entity.Annotations) {
+            result = !!entity.Annotations.Column.Items.nullable.Content;
+        }
+
+        return result;
     }
 }
