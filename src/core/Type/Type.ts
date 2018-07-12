@@ -79,27 +79,31 @@ export class Type<O extends string> {
                         service: this.data.service,
                     });
 
-                    type.generics[position] = { ...generic, position };
+                    type.generics[position] = { type: generic, position };
                 } else {
                     type.generics[position] = {
-                        comment: "",
-                        generics: {},
                         position,
-                        kind: types.TypeKind.TypeParameter,
-                        name: g.Name,
-                        origin: introspection.origin,
-                        isDuplicate: false,
+                        type: {
+                            comment: "",
+                            generics: {},
+                            kind: types.TypeKind.TypeParameter,
+                            name: g.Name,
+                            origin: introspection.origin,
+                            isDuplicate: false,
+                        },
                     };
                 }
             } else if (g.Wildcard) {
                 type.generics[position] = {
-                    comment: "",
-                    generics: {},
                     position,
-                    kind: types.TypeKind.Object,
-                    name: g.Name,
-                    origin: introspection.origin,
-                    isDuplicate: false,
+                    type: {
+                        comment: "",
+                        generics: {},
+                        kind: types.TypeKind.Object,
+                        name: g.Name,
+                        origin: introspection.origin,
+                        isDuplicate: false,
+                    },
                 };
             } else {
                 const generic = Type.create({
@@ -109,7 +113,7 @@ export class Type<O extends string> {
                     service: this.data.service,
                 });
 
-                type.generics[position] = { ...generic, position };
+                type.generics[position] = { type: generic, position };
             }
 
             position++;
@@ -175,10 +179,7 @@ export class Type<O extends string> {
             return types.TypeKind.Void;
         }
 
-        if (
-            this.data.entity.Path.match(/java/) ||
-            this.data.entity.Path.match(/\$/)
-        ) {
+        if (this.data.entity.Path.match(/java/) || this.data.entity.Path.match(/\$/)) {
             return types.TypeKind.Object;
         }
 

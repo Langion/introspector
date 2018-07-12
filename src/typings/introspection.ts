@@ -25,8 +25,9 @@ export interface Field<O extends string> extends Shape {
     type: Type<O>;
     isRequired: boolean;
 }
-export interface Generic<O extends string> extends Type<O> {
+export interface Generic<O extends string> {
     position: number;
+    type: Type<O>;
 }
 
 export interface Type<O extends string> extends Shape {

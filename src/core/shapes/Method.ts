@@ -52,7 +52,7 @@ export class Method<O extends string> {
             });
 
             const isVoid = anotherReturn.kind === types.TypeKind.Void;
-            const hasInGenerics = _.some(returns.generics, (g) => g.name === anotherReturn.name);
+            const hasInGenerics = _.some(returns.generics, (g) => g.type.name === anotherReturn.name);
 
             if (returns.name !== anotherReturn.name && !isVoid && !hasInGenerics) {
                 method.response[anotherReturn.name] = anotherReturn;

@@ -71,12 +71,14 @@ export class Loader<O extends string> {
                     (v) =>
                         (this.data.type.generics[++position] = {
                             position,
-                            comment: "",
-                            generics: {},
-                            isDuplicate: false,
-                            kind: types.TypeKind.Void,
-                            name: v,
-                            origin: this.data.type.origin,
+                            type: {
+                                comment: "",
+                                generics: {},
+                                isDuplicate: false,
+                                kind: types.TypeKind.Void,
+                                name: v,
+                                origin: this.data.type.origin,
+                            },
                         }),
                 );
             }

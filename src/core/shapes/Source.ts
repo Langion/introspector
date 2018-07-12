@@ -26,6 +26,7 @@ export class Source<O extends string> {
         }
 
         if (this.data.introspector.processedEntities.indexOf(entity) >= 0) {
+            this.data.introspection.sources[entity.Name].usedIn.push(this.data.usedIn);
             return;
         }
 
