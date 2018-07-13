@@ -14,7 +14,7 @@ export interface IntrospectorConfig<O extends string> {
 
 export interface Origin<O extends string> {
     name: O;
-    langion: langion.Langion;
+    getLangion: () => langion.Langion;
 }
 
 export type RequestMethods = "get" | "post" | "put" | "delete";

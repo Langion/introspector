@@ -169,6 +169,12 @@ export class Interface<O extends string> {
             extends: {},
         };
 
+        if (this.data.introspection.sources[name]) {
+            this.data.introspection.sources[name].shape.name = name;
+            this.data.introspection.sources[name].shape.comment = comment;
+            return this.data.introspection.sources[name].shape as types.Interface<O>;
+        }
+
         return shape;
     }
 

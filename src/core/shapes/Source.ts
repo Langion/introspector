@@ -25,8 +25,39 @@ export class Source<O extends string> {
             return;
         }
 
-        if (this.data.introspector.processedEntities.indexOf(entity) >= 0) {
-            this.data.introspection.sources[entity.Name].usedIn.push(this.data.usedIn);
+        const processed = this.data.introspector.processedEntities.find((e) => e === entity);
+        if (processed) {
+            if (this.data.introspection.sources[processed.Name]) {
+                this.data.introspection.sources[processed.Name].usedIn.push(this.data.usedIn);
+            } else {
+                const addedFrom = this.data.service.getOrigin();
+                const kind = processed.Kind === langion.Kind.Enum ? "Enumeration" : "Interface";
+
+                this.data.introspection.sources[processed.Name] = {
+                    origin: this.data.introspection.origin,
+                    usedIn: [this.data.usedIn],
+                    addedFrom,
+                    shape:
+                        kind === "Enumeration"
+                            ? {
+                                  kind,
+                                  comment: "",
+                                  isDuplicate: false,
+                                  name: processed.Name,
+                                  values: {},
+                              }
+                            : {
+                                  kind,
+                                  name: processed.Name,
+                                  comment: "",
+                                  extends: {},
+                                  fields: {},
+                                  isDuplicate: false,
+                                  variables: {},
+                              },
+                };
+            }
+
             return;
         }
 

@@ -13,10 +13,20 @@ export class Merger<O extends string> {
         return this.introspections;
     }
 
+    protected init() {
+        if (!this.introspections[this.config.share!.origin]) {
+            this.introspections[this.config.share!.origin] = {
+                controllers: {},
+                origin: this.config.share!.origin,
+                sources: {},
+            };
+        }
+    }
+
     private share(grouped: Record<string, Array<types.Source<O>>>) {
         _.values(grouped).forEach((g) => {
             if (g.length > 1) {
-                const shape = g[0].shape;
+                /*  const shape = g[0].shape;
                 const areAllEqual = g.every((s) => _.isEqual(shape, s.shape));
 
                 if (areAllEqual) {
@@ -39,21 +49,11 @@ export class Merger<O extends string> {
 
                         delete this.introspections[s.origin].sources[s.shape.name];
                     });
-                } else {
-                    g.forEach((s) => (s.shape.isDuplicate = true));
-                }
+                } else { */
+                g.forEach((s) => (s.shape.isDuplicate = true));
+                /* } */
             }
         });
-    }
-
-    private init() {
-        if (!this.introspections[this.config.share!.origin]) {
-            this.introspections[this.config.share!.origin] = {
-                controllers: {},
-                origin: this.config.share!.origin,
-                sources: {},
-            };
-        }
     }
 
     private getGroups() {

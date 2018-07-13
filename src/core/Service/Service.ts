@@ -17,10 +17,12 @@ export class Service<O extends string> {
     constructor(private data: ServiceData<O>) {}
 
     public create() {
-        this.fillPaths(this.data.origin.langion.Modules);
-        const controllers = this.queryRestControllers(this.data.origin.langion);
+        const langionJson = this.data.origin.getLangion();
+        this.fillPaths(langionJson.Modules);
+        const controllers = this.queryRestControllers(langionJson);
         controllers.forEach((c) => this.parseController(c));
         this.loadAllEnums();
+        this.loadAllDto(langionJson);
     }
 
     public getEntity(path: string) {
@@ -55,6 +57,29 @@ export class Service<O extends string> {
                 });
             }
         });
+    }
+
+    private loadAllDto(langionData: langion.Langion) {
+        const origin = this.data.origin.name.toLowerCase();
+        const modules: langion.ModuleEntity[] = jp.query(langionData, `$..Modules["${origin}"]["Modules"]["dto"]`);
+
+        modules.forEach((m) =>
+            _.forEach(m.Exports, (e) => {
+                const entity = this.paths[e.Path];
+
+                Type.create({
+                    entity: {
+                        ...entity,
+                        IsArray: false,
+                        IsParameter: false,
+                        Generics: {},
+                    },
+                    introspector: this.data.introspector,
+                    map: {},
+                    service: this,
+                });
+            }),
+        );
     }
 
     private queryRestControllers(langionData: langion.Langion): langion.ClassEntity[] {
