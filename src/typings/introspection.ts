@@ -1,23 +1,20 @@
-import * as introspector from "./Introspector.types";
-
 export interface Introspection<O extends string> {
     origin: O;
-    sources: Record<string, Source<O>>;
-    controllers: Record<string, Controller<O>>;
+    sources: Array<Source<O>>;
+    controllers: Array<Controller<O>>;
 }
 
 export interface Source<O extends string> {
-    shape: Interface<O> | Enumeration;
     origin: O;
-    addedFrom: O;
     usedIn: Array<Type<O>>;
+    shape: Interface<O> | Enumeration;
 }
 
 export interface Interface<O extends string> extends Shape {
     kind: "Interface";
-    variables: Record<string, string>;
-    extends: Record<string, Type<O>>;
-    fields: Record<string, Field<O>>;
+    variables: string[];
+    extends: Array<Type<O>>;
+    fields: Array<Field<O>>;
 }
 
 export interface Field<O extends string> extends Shape {
@@ -31,7 +28,7 @@ export interface Generic<O extends string> {
 }
 
 export interface Type<O extends string> extends Shape {
-    generics: Record<string, Generic<O>>;
+    generics: Array<Generic<O>>;
     kind: TypeKind;
     origin: O;
 }
@@ -43,12 +40,12 @@ export interface EnumValue {
 
 export interface Enumeration extends Shape {
     kind: "Enumeration";
-    values: Record<string, EnumValue>;
+    values: EnumValue[];
 }
 
 export interface Controller<O extends string> extends Shape {
-    interplay: Record<string, Source<O>>;
-    methods: Record<string, Method<O>>;
+    interplay: Array<Source<O>>;
+    methods: Array<Method<O>>;
     origin: O;
     base: string;
 }
@@ -57,8 +54,8 @@ export interface Method<O extends string> extends Rest, Shape {
     controller: Controller<O>;
     params: Type<O>;
     query: Type<O>;
-    response: Record<string, Type<O>>;
-    payload: Record<string, Type<O>>;
+    response: Array<Type<O>>;
+    payload: Array<Type<O>>;
 }
 
 export interface Shape {
@@ -82,6 +79,8 @@ export enum TypeKind {
 }
 
 export interface Rest {
-    request: introspector.RequestMethods;
+    request: RequestMethods;
     path: string;
 }
+
+export type RequestMethods = "get" | "post" | "put" | "delete";

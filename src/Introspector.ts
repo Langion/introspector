@@ -1,53 +1,33 @@
-import * as langion from "@langion/langion";
-import { Merger } from "./core/Merger";
-import { Service } from "./core/Service";
+import { OriginService } from "./core/OriginService";
+import { Unificator } from "./core/Unificator";
 import * as types from "./typings";
 
 export class Introspector<O extends string> {
-    public static build<O extends string>(config: types.IntrospectorConfig<O>) {
+    public static async build<O extends string>(config: types.IntrospectorConfig<O>) {
         const introspector = new Introspector(config);
-        const result = introspector.build();
+        const result = await introspector.introspect();
         return result;
     }
 
-    public processedEntities: langion.Entity[] = [];
-    private introspections = {} as Record<O, types.Introspection<O>>;
-
     private constructor(public config: types.IntrospectorConfig<O>) {}
 
-    public elicit(path: string): types.Introspection<O> {
-        const origin = this.config.getOriginFromModuleName(path);
-        const introspection = this.getIntrospection(origin);
+    private async introspect() {
+        const parsers = this.config.origins.map((o) => this.parseOrigin(o));
+        const introspections = await Promise.all(parsers);
+
+        const unified = this.unify(introspections);
+        return unified;
+    }
+
+    private unify(introspections: Array<Record<O, types.Introspection<O>>>) {
+        const unificator = new Unificator(introspections, this.config.share);
+        const unified = unificator.unify();
+        return unified;
+    }
+
+    private async parseOrigin(origin: types.Origin<O>) {
+        const service: OriginService<O> = new OriginService(origin, this);
+        const introspection = await service.parse();
         return introspection;
-    }
-
-    public getIntrospection(origin: O) {
-        if (!this.introspections[origin]) {
-            this.introspections[origin] = { origin, controllers: {}, sources: {} };
-        }
-
-        return this.introspections[origin];
-    }
-
-    private build() {
-        this.config.origins.forEach((o) => this.parseOrigin(o));
-
-        this.merge();
-
-        return this.introspections;
-    }
-
-    private merge() {
-        if (!this.config.share) {
-            return;
-        }
-
-        const merger = new Merger(this.introspections, this.config);
-        this.introspections = merger.make();
-    }
-
-    private parseOrigin(origin: types.Origin<O>) {
-        const service = new Service({ origin, introspector: this });
-        service.create();
     }
 }

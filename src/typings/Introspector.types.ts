@@ -1,4 +1,6 @@
 import * as langion from "@langion/langion";
+import { Adapter } from "../core/Adapter";
+import { Source } from "./introspection";
 
 export interface SideOrigin<O extends string> {
     origin: O;
@@ -7,14 +9,23 @@ export interface SideOrigin<O extends string> {
 
 export interface IntrospectorConfig<O extends string> {
     origins: Array<Origin<O>>;
-    parseJavaBeans: boolean;
     getOriginFromModuleName: (path: string) => O;
     share?: SideOrigin<O>;
+    unknown?: SideOrigin<O>;
+    adapters: Adapter[];
 }
 
 export interface Origin<O extends string> {
     name: O;
-    getLangion: () => langion.Langion;
+    getLangion: () => Promise<langion.Langion>;
 }
 
-export type RequestMethods = "get" | "post" | "put" | "delete";
+export interface CommentData {
+    Annotations?: Record<string, langion.AnnotationEntity>;
+    Comment?: string;
+}
+
+export interface ProcessedEntity<O extends string> {
+    entity: langion.Entity;
+    source: Source<O>;
+}

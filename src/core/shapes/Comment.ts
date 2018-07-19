@@ -1,45 +1,15 @@
-import * as langion from "@langion/langion";
+import * as types from "../../typings";
+import { OriginService } from "../OriginService";
 
-export interface CommentData {
-    entity: langion.Entity;
-    annotations?: Record<string, langion.AnnotationEntity>;
-}
-
-export class Comment {
-    public static create(data: CommentData) {
-        const comment = new Comment(data);
-        const result = comment.parse();
-        return result;
-    }
-
-    private constructor(private data: CommentData) {}
+export class Comment<O extends string> {
+    constructor(private service: OriginService<O>, private data: types.CommentData) {}
 
     public parse() {
-        const comment = this.extractComment();
+        const comment = this.getComment();
         const withoutCommentSigns = this.removeCommentSigns(comment);
         const oneLine = this.removeLineBreaks(withoutCommentSigns);
 
         return oneLine;
-    }
-
-    private extractComment() {
-        let comment = this.data.entity.Comment || "";
-
-        if (!this.data.annotations) {
-            return comment;
-        }
-
-        if ("ApiOperation" in this.data.annotations) {
-            comment = this.data.annotations.ApiOperation.Items.value.Content;
-
-            if (this.data.annotations.ApiOperation.Items.notes.Content) {
-                comment += `\n${this.data.annotations.ApiOperation.Items.notes.Content}`;
-            }
-        } else if ("ApiParam" in this.data.annotations) {
-            comment = this.data.annotations.ApiParam.Items.value.Content;
-        }
-
-        return comment;
     }
 
     private removeCommentSigns(comment: string) {
@@ -65,5 +35,14 @@ export class Comment {
         const line = comment.join("");
         const oneSpace = line.replace(anySpace, " ");
         return oneSpace;
+    }
+
+    private getComment() {
+        const comment = this.service.introspector.config.adapters.reduce<string>(
+            (e, a) => a.getComment(this.data, e, this.service.introspector.config.adapters),
+            "",
+        );
+
+        return comment;
     }
 }

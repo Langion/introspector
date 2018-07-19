@@ -1,27 +1,18 @@
 import * as langion from "@langion/langion";
 import * as _ from "lodash";
-import { Introspector } from "../../Introspector";
 import * as types from "../../typings";
-import { Service } from "../Service";
+import { OriginService } from "../OriginService";
 import { Loader } from "./Loader";
 
-export interface TypeProps<O extends string> {
-    entity: langion.TypeEntity;
-    map: Record<string, langion.GenericEntity>;
-    introspector: Introspector<O>;
-    service: Service<O>;
-}
 export class Type<O extends string> {
-    public static create<O extends string>(data: TypeProps<O>) {
-        const type = new Type(data);
-        const result = type.getType();
-        return result;
-    }
+    constructor(
+        private entity: langion.TypeEntity,
+        private map: Record<string, langion.GenericEntity>,
+        private service: OriginService<O>,
+    ) {}
 
-    private constructor(private data: TypeProps<O>) {}
-
-    private getType(): types.Type<O> {
-        const introspection = this.data.introspector.elicit(this.data.entity.Path);
+    public getType(): types.Type<O> {
+        const introspection = this.service.elicit(this.entity.Path);
 
         const parameter = this.getParameter();
 
@@ -36,26 +27,21 @@ export class Type<O extends string> {
 
     private extractType(introspection: types.Introspection<O>) {
         const kind = this.getKind();
-        const name = this.data.entity.Name;
+        const name = this.entity.Name;
 
         const type: types.Type<O> = {
             name,
             kind,
             comment: "",
-            generics: {},
+            generics: [],
             origin: introspection.origin,
             isDuplicate: false,
         };
 
         this.extractGenerics(type, introspection);
 
-        const entity = Loader.load({
-            type,
-            entity: this.data.entity,
-            introspector: this.data.introspector,
-            map: this.data.map,
-            service: this.data.service,
-        });
+        const loader = new Loader(type, this.entity, this.service, this.map);
+        const entity = loader.load();
 
         if (entity && entity.kind === "Enumeration") {
             type.kind = types.TypeKind.Enumeration;
@@ -67,25 +53,19 @@ export class Type<O extends string> {
     private extractGenerics(type: types.Type<O>, introspection: types.Introspection<O>) {
         let position = 0;
 
-        _.forEach(this.data.entity.Generics, (g) => {
+        _.forEach(this.entity.Generics, (g) => {
             if (g.IsParameter) {
-                if (this.data.map[g.Name]) {
-                    const inMap = this.data.map[g.Name];
-
-                    const generic = Type.create({
-                        entity: inMap.Type,
-                        map: this.data.map,
-                        introspector: this.data.introspector,
-                        service: this.data.service,
-                    });
-
+                if (this.map[g.Name]) {
+                    const inMap = this.map[g.Name];
+                    const typeCreator = new Type(inMap.Type, this.map, this.service);
+                    const generic = typeCreator.getType();
                     type.generics[position] = { type: generic, position };
                 } else {
                     type.generics[position] = {
                         position,
                         type: {
                             comment: "",
-                            generics: {},
+                            generics: [],
                             kind: types.TypeKind.TypeParameter,
                             name: g.Name,
                             origin: introspection.origin,
@@ -98,7 +78,7 @@ export class Type<O extends string> {
                     position,
                     type: {
                         comment: "",
-                        generics: {},
+                        generics: [],
                         kind: types.TypeKind.Object,
                         name: g.Name,
                         origin: introspection.origin,
@@ -106,13 +86,8 @@ export class Type<O extends string> {
                     },
                 };
             } else {
-                const generic = Type.create({
-                    entity: g.Type,
-                    map: this.data.map,
-                    introspector: this.data.introspector,
-                    service: this.data.service,
-                });
-
+                const typeCreator = new Type(g.Type, this.map, this.service);
+                const generic = typeCreator.getType();
                 type.generics[position] = { type: generic, position };
             }
 
@@ -121,19 +96,15 @@ export class Type<O extends string> {
     }
 
     private getParameter() {
-        if (this.data.entity.IsParameter) {
-            const generic = this.data.map[this.data.entity.Name];
+        if (this.entity.IsParameter) {
+            const generic = this.map[this.entity.Name];
 
             if (!generic) {
                 return;
             }
 
-            const type = Type.create({
-                entity: generic.Type,
-                map: this.data.map,
-                introspector: this.data.introspector,
-                service: this.data.service,
-            });
+            const typeCreator = new Type(generic.Type, this.map, this.service);
+            const type = typeCreator.getType();
 
             return type;
         }
@@ -142,47 +113,11 @@ export class Type<O extends string> {
     }
 
     private getKind() {
-        if (this.data.entity.Path.match(/boolean/)) {
-            return types.TypeKind.Boolean;
-        }
+        const kind = this.service.introspector.config.adapters.reduce<types.TypeKind>(
+            (e, a) => a.getKind(this.entity, e, this.service.introspector.config.adapters),
+            types.TypeKind.Void,
+        );
 
-        if (this.data.entity.Path.match(/Date/) || this.data.entity.Path.match(/LocalDateTime/)) {
-            return types.TypeKind.Date;
-        }
-
-        if (
-            this.data.entity.IsArray ||
-            this.data.entity.Path.match(/java\.util\.List/) ||
-            this.data.entity.Path.match(/java\.util\.Collection/) ||
-            this.data.entity.Path.match(/java\.util\.Set/)
-        ) {
-            return types.TypeKind.List;
-        }
-
-        if (this.data.entity.Path.match(/java\.util\.Map/)) {
-            return types.TypeKind.Map;
-        }
-
-        if (this.data.entity.Path.match(/number/)) {
-            return types.TypeKind.Number;
-        }
-
-        if (this.data.entity.Path.match(/string/) || this.data.entity.Path.match(/char/)) {
-            return types.TypeKind.String;
-        }
-
-        if (this.data.entity.IsParameter) {
-            return types.TypeKind.TypeParameter;
-        }
-
-        if (this.data.entity.Name.toLocaleLowerCase() === "void") {
-            return types.TypeKind.Void;
-        }
-
-        if (this.data.entity.Path.match(/java/) || this.data.entity.Path.match(/\$/)) {
-            return types.TypeKind.Object;
-        }
-
-        return types.TypeKind.Entity;
+        return kind;
     }
 }
