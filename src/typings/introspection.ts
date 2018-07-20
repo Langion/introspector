@@ -6,6 +6,7 @@ export interface Introspection<O extends string> {
 
 export interface Source<O extends string> {
     origin: O;
+    addedFrom: O;
     usedIn: Array<Type<O>>;
     shape: Interface<O> | Enumeration;
 }

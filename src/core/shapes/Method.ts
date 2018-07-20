@@ -14,21 +14,21 @@ export class Method<O extends string> {
     ) {}
 
     public parse() {
-        const rest = this.getRest();
+        const rest = this.service.introspector.adapters.getRest(this.entity);
 
         if (!rest) {
             return;
         }
+
+        const path = `${this.controller.base}/${rest.path || ""}`;
+        rest.path = path.replace("//", "/");
 
         const method = this.createMethod(rest);
         this.parseReturns(method);
     }
 
     private parseReturns(method: types.Method<O>) {
-        const returns = this.service.introspector.config.adapters.reduce<langion.TypeEntity[]>(
-            (t, a) => a.getMethodReturns(this.entity, t, this.service.introspector.config.adapters),
-            [this.entity.Returns],
-        );
+        const returns = this.service.introspector.adapters.getMethodReturns(this.entity, [this.entity.Returns]);
 
         const allResponses = returns.map((r) => {
             const typeCreator = new Type(r, this.map, this.service);
@@ -88,19 +88,5 @@ export class Method<O extends string> {
         this.controller.methods.push(method);
 
         return method;
-    }
-
-    private getRest() {
-        const rest = this.service.introspector.config.adapters.reduce<types.Rest | null>(
-            (b, a) => a.getRest(this.entity, b, this.service.introspector.config.adapters),
-            null,
-        );
-
-        if (rest) {
-            const path = `${this.controller.base}/${rest.path || ""}`;
-            rest.path = path.replace("//", "/");
-        }
-
-        return rest;
     }
 }

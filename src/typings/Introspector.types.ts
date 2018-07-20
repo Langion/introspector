@@ -1,5 +1,5 @@
 import * as langion from "@langion/langion";
-import { Adapter } from "../core/Adapter";
+import { Adapter } from "./Adapter";
 import { Source } from "./introspection";
 
 export interface SideOrigin<O extends string> {

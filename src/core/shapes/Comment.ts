@@ -5,7 +5,7 @@ export class Comment<O extends string> {
     constructor(private service: OriginService<O>, private data: types.CommentData) {}
 
     public parse() {
-        const comment = this.getComment();
+        const comment = this.service.introspector.adapters.getComment(this.data);
         const withoutCommentSigns = this.removeCommentSigns(comment);
         const oneLine = this.removeLineBreaks(withoutCommentSigns);
 
@@ -35,14 +35,5 @@ export class Comment<O extends string> {
         const line = comment.join("");
         const oneSpace = line.replace(anySpace, " ");
         return oneSpace;
-    }
-
-    private getComment() {
-        const comment = this.service.introspector.config.adapters.reduce<string>(
-            (e, a) => a.getComment(this.data, e, this.service.introspector.config.adapters),
-            "",
-        );
-
-        return comment;
     }
 }

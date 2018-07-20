@@ -88,8 +88,8 @@ export class Entry<O extends string> {
     }
 
     private createController(introspection: types.Introspection<O>) {
-        const base = this.getBasePath();
-        const name = this.getEntryName();
+        const base = this.service.introspector.adapters.getBasePath(this.entry);
+        const name = this.service.introspector.adapters.getEntryName(this.entry, this.service.origin.name);
 
         const commentParser = new Comment(this.service, this.entry);
         const comment = commentParser.parse();
@@ -105,24 +105,5 @@ export class Entry<O extends string> {
         };
 
         return controller;
-    }
-
-    private getBasePath() {
-        const base = this.service.introspector.config.adapters.reduce<string>(
-            (b, a) => a.getBasePath(this.entry, b, this.service.introspector.config.adapters),
-            "",
-        );
-
-        return base;
-    }
-
-    private getEntryName() {
-        const name = this.service.introspector.config.adapters.reduce<string>(
-            (n, a) =>
-                a.getEntryName(this.entry, this.service.origin.name, n, this.service.introspector.config.adapters),
-            "",
-        );
-
-        return name;
     }
 }

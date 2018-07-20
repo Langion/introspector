@@ -3,6 +3,7 @@ import * as _ from "lodash";
 import { Introspector } from "../Introspector";
 import * as types from "../typings";
 import { Entry } from "./shapes/Entry";
+import { Type } from "./Type";
 
 export class OriginService<O extends string> {
     private processedEntities: Array<types.ProcessedEntity<O>> = [];
@@ -15,8 +16,12 @@ export class OriginService<O extends string> {
         const langionDescription = await this.origin.getLangion();
 
         this.fillPaths(langionDescription.Modules);
-        const entryPoints = this.getEntryPoints(langionDescription);
+        let entryPoints = this.introspector.adapters.queryEntryPoints(langionDescription);
+        entryPoints = _.uniq(entryPoints);
+
         entryPoints.forEach((e) => this.parseEntryPoint(e));
+
+        this.loadAdditionalEntities(langionDescription);
 
         return this.introspections;
     }
@@ -57,18 +62,27 @@ export class OriginService<O extends string> {
         });
     }
 
-    private getEntryPoints(langionDescription: langion.Langion) {
-        let entryPoints = this.introspector.config.adapters.reduce<langion.ClassEntity[]>(
-            (e, a) => a.queryEntryPoints(langionDescription, e, this.introspector.config.adapters),
-            [],
-        );
-
-        entryPoints = _.uniq(entryPoints);
-        return entryPoints;
-    }
-
     private parseEntryPoint(entry: langion.ClassEntity) {
         const result = new Entry(entry, this);
         result.parse();
+    }
+
+    private loadAdditionalEntities(langionDescription: langion.Langion) {
+        const entities = this.introspector.adapters.loadAdditionalData(this.paths, langionDescription);
+
+        entities.forEach((e) => {
+            const type = new Type(
+                {
+                    ...e,
+                    IsArray: false,
+                    IsParameter: false,
+                    Generics: {},
+                },
+                {},
+                this,
+            );
+
+            type.getType();
+        });
     }
 }

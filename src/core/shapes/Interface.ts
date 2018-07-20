@@ -21,8 +21,8 @@ export class Interface<O extends string> {
         _.forEach(this.entity.Variables, (v) => this.shape.variables.push(v.Name));
 
         this.parseExtends();
-        _.forEach(this.entity.Methods, (m) => this.parseMethod(m));
         this.parseFields();
+        _.forEach(this.entity.Methods, (m) => this.parseMethod(m));
 
         this.handleGenerics();
     }
@@ -37,7 +37,7 @@ export class Interface<O extends string> {
             _.forEach(
                 this.shape.variables,
                 (v) =>
-                    (this.type.generics[++position] = {
+                    (this.type.generics[position++] = {
                         position,
                         type: {
                             comment: "",
@@ -58,6 +58,11 @@ export class Interface<O extends string> {
         }
 
         _.forEach(this.entity.Fields, (f) => {
+            const shouldAdd = this.service.introspector.adapters.shouldAddField(f);
+            if (!shouldAdd) {
+                return;
+            }
+
             const fieldName = f.Name.trim();
             const createdField = this.createField(f, fieldName);
 
@@ -83,9 +88,9 @@ export class Interface<O extends string> {
         }
     }
 
-    private parseMethod(m: langion.MethodEntity) {
-        const field = this.createField(m);
-        const extracted = this.extractFieldFromMethod(m, field);
+    private parseMethod(method: langion.MethodEntity) {
+        const field = this.createField(method);
+        const extracted = this.service.introspector.adapters.extractFieldFromMethod(method, field);
 
         if (extracted !== field && extracted.name) {
             const hasWithTheSameName = _.find(this.shape.fields, (f) => f.name === extracted.name);
@@ -107,7 +112,7 @@ export class Interface<O extends string> {
 
         const type = typeCreator.getType();
 
-        const isRequired = this.isRequired(entity);
+        const isRequired = this.service.introspector.adapters.isRequired(entity);
 
         const field: types.Field<O> = {
             comment,
@@ -148,23 +153,5 @@ export class Interface<O extends string> {
 
     private isClassEntity(entity: langion.Entity): entity is langion.ClassEntity {
         return entity.Kind === langion.Kind.Class;
-    }
-
-    private isRequired(entity: langion.MethodEntity | langion.FieldEntity) {
-        const result = this.service.introspector.config.adapters.reduce<boolean>(
-            (r, a) => a.isRequired(entity, r, this.service.introspector.config.adapters),
-            false,
-        );
-
-        return result;
-    }
-
-    private extractFieldFromMethod(method: langion.MethodEntity, field: types.Field<O>) {
-        const result = this.service.introspector.config.adapters.reduce<types.Field<O>>(
-            (f, a) => a.extractFieldFromMethod(method, field, f, this.service.introspector.config.adapters),
-            field,
-        );
-
-        return result;
     }
 }

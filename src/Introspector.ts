@@ -1,3 +1,4 @@
+import { AdapterInvoker } from "./core/AdapterInvoker";
 import { OriginService } from "./core/OriginService";
 import { Unificator } from "./core/Unificator";
 import * as types from "./typings";
@@ -9,6 +10,7 @@ export class Introspector<O extends string> {
         return result;
     }
 
+    public adapters = new AdapterInvoker(this.config.adapters);
     private constructor(public config: types.IntrospectorConfig<O>) {}
 
     private async introspect() {

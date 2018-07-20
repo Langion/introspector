@@ -26,7 +26,7 @@ export class Type<O extends string> {
     }
 
     private extractType(introspection: types.Introspection<O>) {
-        const kind = this.getKind();
+        const kind = this.service.introspector.adapters.getKind(this.entity);
         const name = this.entity.Name;
 
         const type: types.Type<O> = {
@@ -110,14 +110,5 @@ export class Type<O extends string> {
         }
 
         return null;
-    }
-
-    private getKind() {
-        const kind = this.service.introspector.config.adapters.reduce<types.TypeKind>(
-            (e, a) => a.getKind(this.entity, e, this.service.introspector.config.adapters),
-            types.TypeKind.Void,
-        );
-
-        return kind;
     }
 }
