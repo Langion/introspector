@@ -45,6 +45,70 @@ export class AdapterInvoker implements types.Adapter {
         return result;
     }
 
+    public hasParamsInPath<O extends string>(method: types.Method<O>, initial = false) {
+        const result = this.adapters.reduce(
+            (p, a) => (a.hasParamsInPath ? a.hasParamsInPath(method, p, this.adapters) : p),
+            initial,
+        );
+
+        return result;
+    }
+
+    public getParamsFromStringPath<O extends string>(method: types.Method<O>, initial: string[] = []) {
+        const result = this.adapters.reduce(
+            (p, a) => (a.getParamsFromStringPath ? a.getParamsFromStringPath(method, p, this.adapters) : p),
+            initial,
+        );
+
+        return result;
+    }
+
+    public getMethodPayload<O extends string>(
+        argument: langion.ArgumentEntity,
+        type: types.Type<O>,
+        initial: Array<types.Type<O>> = [],
+    ) {
+        const result = this.adapters.reduce(
+            (p, a) => (a.getMethodPayload ? a.getMethodPayload(argument, type, p, this.adapters) : p),
+            initial,
+        );
+
+        return result;
+    }
+
+    public getQueryFields<O extends string>(
+        argument: langion.ArgumentEntity,
+        type: types.Type<O>,
+        comment: string,
+        initial: Array<types.Field<O>> = [],
+    ) {
+        const result = this.adapters.reduce(
+            (p, a) => (a.getQueryFields ? a.getQueryFields(argument, type, comment, p, this.adapters) : p),
+            initial,
+        );
+
+        return result;
+    }
+
+    public getParamsFields<O extends string>(
+        argument: langion.ArgumentEntity,
+        type: types.Type<O>,
+        comment: string,
+        paramsInPath: string[],
+        currentParam: number,
+        initial: Array<types.Field<O>> = [],
+    ) {
+        const result = this.adapters.reduce(
+            (p, a) =>
+                a.getParamsFields
+                    ? a.getParamsFields(argument, type, comment, paramsInPath, currentParam, p, this.adapters)
+                    : p,
+            initial,
+        );
+
+        return result;
+    }
+
     public extractFieldFromMethod<O extends string>(method: langion.MethodEntity, field: types.Field<O>) {
         const result = this.adapters.reduce(
             (p, a) => (a.extractFieldFromMethod ? a.extractFieldFromMethod(method, field, p, this.adapters) : p),

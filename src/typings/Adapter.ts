@@ -1,5 +1,5 @@
 import * as langion from "@langion/langion";
-import { Field, Rest, TypeKind } from "./introspection";
+import { Field, Rest, Type, TypeKind, Method } from "./introspection";
 import { CommentData } from "./Introspector.types";
 
 export interface Adapter {
@@ -21,6 +21,43 @@ export interface Adapter {
         previous: boolean,
         adapters: Adapter[],
     ) => boolean;
+
+    hasParamsInPath?: <O extends string>(
+        method: Method<O>,
+        previous: boolean,
+        adapters: Adapter[],
+    ) => boolean;
+
+    getParamsFromStringPath?: <O extends string>(
+        method: Method<O>,
+        previous: string[],
+        adapters: Adapter[],
+    ) => string[];
+
+    getMethodPayload?: <O extends string>(
+        argument: langion.ArgumentEntity,
+        type: Type<O>,
+        previous: Array<Type<O>>,
+        adapters: Adapter[],
+    ) => Array<Type<O>>;
+
+    getQueryFields?: <O extends string>(
+        argument: langion.ArgumentEntity,
+        type: Type<O>,
+        comment: string,
+        previous: Array<Field<O>>,
+        adapters: Adapter[],
+    ) => Array<Field<O>>;
+
+    getParamsFields?: <O extends string>(
+        argument: langion.ArgumentEntity,
+        type: Type<O>,
+        comment: string,
+        paramsInPath: string[],
+        currentParam: number,
+        previous: Array<Field<O>>,
+        adapters: Adapter[],
+    ) => Array<Field<O>>;
 
     extractFieldFromMethod?: <O extends string>(
         method: langion.MethodEntity,

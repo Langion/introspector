@@ -24,6 +24,7 @@ export class SpringAdapter implements types.Adapter {
 
         return base;
     }
+
     public isRequired(entity: langion.FieldEntity | langion.MethodEntity) {
         let result = false;
 
@@ -33,6 +34,79 @@ export class SpringAdapter implements types.Adapter {
             result = true;
         } else if ("Column" in entity.Annotations) {
             result = !!entity.Annotations.Column.Items.nullable.Content;
+        }
+
+        return result;
+    }
+
+    public hasParamsInPath<O extends string>(method: types.Method<O>) {
+        const hasParamsInPath = /[{}]/gm;
+        const result = hasParamsInPath.test(method.path);
+        return result;
+    }
+
+    public getParamsFromStringPath<O extends string>(method: types.Method<O>, previous: string[]) {
+        let result = previous;
+
+        const params = method.path.match(/\{(\w+)\}/g);
+
+        if (params) {
+            const normalized = params.map((a) => a.replace(/[{}]/g, ""));
+            result = result.concat(normalized);
+        }
+
+        return result;
+    }
+
+    public getMethodPayload<O extends string>(
+        argument: langion.ArgumentEntity,
+        type: types.Type<O>,
+        previous: Array<types.Type<O>>,
+    ) {
+        let result = previous;
+
+        if ("RequestBody" in argument.Annotations) {
+            result = result.concat(type);
+        }
+        return result;
+    }
+
+    public getQueryFields<O extends string>(
+        argument: langion.ArgumentEntity,
+        type: types.Type<O>,
+        comment: string,
+        previous: Array<types.Field<O>>,
+    ) {
+        let result = previous;
+
+        if ("RequestParam" in argument.Annotations) {
+            const fieldName = argument.Annotations.RequestParam.Items.value.Content || argument.Name;
+            const field: types.Field<O> = { name: fieldName, type, isDuplicate: false, isRequired: false, comment };
+            result = result.concat([field]);
+        }
+
+        return result;
+    }
+
+    public getParamsFields?<O extends string>(
+        argument: langion.ArgumentEntity,
+        type: types.Type<O>,
+        comment: string,
+        paramsInPath: string[],
+        currentParam: number,
+        previous: Array<types.Field<O>>,
+    ) {
+        let result = previous;
+
+        if ("PathVariable" in argument.Annotations) {
+            let pathName: string = argument.Annotations.PathVariable.Items.value.Content || argument.Name;
+
+            if (pathName.match(/arg\d+/)) {
+                pathName = paramsInPath[currentParam];
+            }
+
+            const field: types.Field<O> = { name: pathName, type, isDuplicate: false, isRequired: true, comment };
+            result = result.concat([field]);
         }
 
         return result;

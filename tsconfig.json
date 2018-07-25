@@ -13,5 +13,9 @@
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
     "baseUrl": "."
-  }
+  },
+  "exclude": [
+    "./test.ts",
+    "dist"
+  ]
 }

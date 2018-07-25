@@ -11,6 +11,7 @@ export class Method<O extends string> {
         private map: Record<string, langion.GenericEntity>,
         private controller: types.Controller<O>,
         private service: OriginService<O>,
+        private hasPriority: boolean,
     ) {}
 
     public parse() {
@@ -24,7 +25,13 @@ export class Method<O extends string> {
         rest.path = path.replace("//", "/");
 
         const method = this.createMethod(rest);
+
+        if (!method) {
+            return;
+        }
+
         this.parseReturns(method);
+        this.parseInputData(method);
     }
 
     private parseReturns(method: types.Method<O>) {
@@ -40,10 +47,177 @@ export class Method<O extends string> {
 
         responses.forEach((r) => {
             const isVoid = r.kind === types.TypeKind.Void;
-            const hasInGenerics = _.some(r.generics, (g) => g.type.name === r.name);
 
-            if (!isVoid && !hasInGenerics) {
+            if (!isVoid) {
                 method.response.push(r);
+            }
+        });
+    }
+
+    private parseInputData(method: types.Method<O>) {
+        const methodName = method.name[0].toUpperCase() + method.name.slice(1);
+
+        const query: types.Interface<O> = {
+            name: `${methodName}Query`,
+            comment: "",
+            extends: [],
+            fields: [],
+            isDuplicate: false,
+            variables: [],
+            kind: "Interface",
+        };
+
+        const params: types.Interface<O> = {
+            name: `${methodName}Params`,
+            comment: "",
+            extends: [],
+            fields: [],
+            isDuplicate: false,
+            variables: [],
+            kind: "Interface",
+        };
+
+        const paramsInPath = this.service.introspector.adapters.getParamsFromStringPath(method);
+        this.extractData(method, query, paramsInPath, params);
+
+        this.fillQuerySource(query, method);
+        this.fillParamsSource(params, method);
+
+        const hasParamsInPath = this.service.introspector.adapters.hasParamsInPath(method);
+        const hasParamsNotInPath = !hasParamsInPath && params.fields.length > 0;
+
+        if (hasParamsNotInPath) {
+            const onlyOneParam = params.fields[0];
+            method.path = `${method.path}/{${onlyOneParam.name}}`;
+        }
+
+        method.path = method.path.replace(/\/\//, "/");
+    }
+
+    private fillQuerySource(query: types.Interface<O>, method: types.Method<O>) {
+        if (!_.isEmpty(query.fields)) {
+            const source: types.Source<O> = {
+                shape: query,
+                usedIn: [],
+                origin: this.controller.origin,
+            };
+
+            const hasWithTheSameName = method.controller.interplay.some((i) => i.shape.name === source.shape.name);
+
+            if (hasWithTheSameName) {
+                if (this.hasPriority) {
+                    method.controller.interplay = method.controller.interplay.filter(
+                        (i) => i.shape.name !== source.shape.name,
+                    );
+                } else {
+                    return;
+                }
+            }
+
+            method.controller.interplay.push(source);
+
+            method.query = {
+                generics: [],
+                comment: "",
+                isDuplicate: false,
+                kind: types.TypeKind.Entity,
+                origin: this.controller.origin,
+                name: source.shape.name,
+            };
+
+            source.usedIn.push(method.query);
+        }
+    }
+
+    private fillParamsSource(params: types.Interface<O>, method: types.Method<O>) {
+        if (!_.isEmpty(params.fields)) {
+            const source: types.Source<O> = {
+                origin: this.controller.origin,
+                shape: params,
+                usedIn: [],
+            };
+
+            const hasWithTheSameName = method.controller.interplay.some((i) => i.shape.name === source.shape.name);
+
+            if (hasWithTheSameName) {
+                if (this.hasPriority) {
+                    method.controller.interplay = method.controller.interplay.filter(
+                        (i) => i.shape.name !== source.shape.name,
+                    );
+                } else {
+                    return;
+                }
+            }
+
+            method.controller.interplay.push(source);
+
+            method.params = {
+                isDuplicate: false,
+                kind: types.TypeKind.Entity,
+                origin: this.controller.origin,
+                generics: [],
+                comment: "",
+                name: source.shape.name,
+            };
+
+            source.usedIn.push(method.params);
+        }
+    }
+
+    private extractData(
+        method: types.Method<O>,
+        query: types.Interface<O>,
+        paramsInPath: string[],
+        params: types.Interface<O>,
+    ) {
+        let currentParam = 0;
+
+        _.forEach(this.entity.Arguments, (a) => {
+            const typeCreator = new Type(a.Type, this.map, this.service);
+            const type = typeCreator.getType();
+            const commentCreator = new Comment(this.service, a);
+            const comment = commentCreator.parse() || "";
+
+            const methodPayload = this.service.introspector.adapters.getMethodPayload(a, type);
+            method.payload = method.payload.concat(methodPayload);
+
+            const methodQuery = this.service.introspector.adapters.getQueryFields(a, type, comment);
+            query.fields = query.fields.concat(methodQuery);
+
+            const methodParams = this.service.introspector.adapters.getParamsFields(
+                a,
+                type,
+                comment,
+                paramsInPath,
+                currentParam,
+            );
+
+            if (methodParams.length) {
+                params.fields = params.fields.concat(methodParams);
+                currentParam++;
+            }
+        });
+
+        this.extractDirectlyFromPath(paramsInPath, params);
+    }
+
+    private extractDirectlyFromPath(paramsInPath: string[], params: types.Interface<O>) {
+        paramsInPath.forEach((p) => {
+            let field = _.find(params.fields, (f) => f.name === p);
+
+            if (!field) {
+                const type: types.Type<O> = {
+                    name: "string",
+                    comment: "",
+                    generics: [],
+                    isDuplicate: false,
+
+                    kind: types.TypeKind.String,
+                    origin: this.controller.origin,
+                };
+
+                field = { name: p, isDuplicate: false, isRequired: true, type, comment: "" };
+                params.fields.push(field);
             }
         });
     }
@@ -84,6 +258,16 @@ export class Method<O extends string> {
             response: [],
             payload: [],
         };
+
+        const hasMethodWithTheSameName = this.controller.methods.some((m) => m.name === method.name);
+
+        if (hasMethodWithTheSameName) {
+            if (this.hasPriority) {
+                this.controller.methods = this.controller.methods.filter((m) => m.name !== method.name);
+            } else {
+                return null;
+            }
+        }
 
         this.controller.methods.push(method);
 

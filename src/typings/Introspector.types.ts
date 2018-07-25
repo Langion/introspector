@@ -11,7 +11,6 @@ export interface IntrospectorConfig<O extends string> {
     origins: Array<Origin<O>>;
     getOriginFromModuleName: (path: string) => O;
     share?: SideOrigin<O>;
-    unknown?: SideOrigin<O>;
     adapters: Adapter[];
 }
 
