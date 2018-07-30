@@ -79,8 +79,8 @@ export enum TypeKind {
 }
 
 export interface Rest {
-    request: RequestMethods;
+    request: RequestMethod;
     path: string;
 }
 
-export type RequestMethods = "get" | "post" | "put" | "delete";
+export type RequestMethod = "get" | "post" | "put" | "delete" | "patch" | "options" | "head" | "trace" | "connect";

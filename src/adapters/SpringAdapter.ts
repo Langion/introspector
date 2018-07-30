@@ -193,7 +193,7 @@ export class SpringAdapter implements types.Adapter {
 
     public getRest(method: langion.MethodEntity): types.Rest | null {
         let path = "";
-        let request: types.RequestMethods | null = null;
+        let request: types.RequestMethod | null = null;
 
         if ("RequestMapping" in method.Annotations) {
             path = method.Annotations.RequestMapping.Items.value.Content[0];
