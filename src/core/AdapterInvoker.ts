@@ -109,6 +109,15 @@ export class AdapterInvoker implements types.Adapter {
         return result;
     }
 
+    public extractName(field: langion.FieldEntity, initial = "") {
+        const result = this.adapters.reduce(
+            (p, a) => (a.extractName ? a.extractName(field, p, this.adapters) : p),
+            initial,
+        );
+
+        return result;
+    }
+
     public extractFieldFromMethod<O extends string>(method: langion.MethodEntity, field: types.Field<O>) {
         const result = this.adapters.reduce(
             (p, a) => (a.extractFieldFromMethod ? a.extractFieldFromMethod(method, field, p, this.adapters) : p),

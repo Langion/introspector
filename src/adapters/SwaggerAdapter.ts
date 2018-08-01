@@ -6,7 +6,27 @@ export class SwaggerAdapter implements types.Adapter {
         let result: langion.TypeEntity[] = [];
 
         if ("ApiOperation" in method.Annotations) {
-            result.push(method.Annotations.ApiOperation.Items.response.Type);
+            const type = method.Annotations.ApiOperation.Items.response.Type;
+
+            const searchSimilarTypes = (t: langion.TypeEntity) => {
+                const hasSomething = t.Name.indexOf(type.Name) >= 0 || type.Name.indexOf(t.Name) >= 0;
+                const generics = Object.keys(t.Generics);
+
+                if (hasSomething) {
+                    return true;
+                } else if (generics.length) {
+                    const fromGeneric = generics.some((k) => searchSimilarTypes(t.Generics[k].Type));
+                    return fromGeneric;
+                }
+
+                return false;
+            };
+
+            const hasSmthInReturns = previousParsedMethodReturn.some(searchSimilarTypes);
+
+            if (!hasSmthInReturns) {
+                result.push(type);
+            }
         }
 
         result = previousParsedMethodReturn.concat(result);

@@ -7,6 +7,10 @@ import { Comment } from "./Comment";
 
 export class Interface<O extends string> {
     public shape: types.Interface<O>;
+    /**
+     * Array of field names that has been parsed
+     */
+    private addedFields: string[] = [];
 
     constructor(
         private entity: langion.InterfaceEntity | langion.ClassEntity,
@@ -63,13 +67,19 @@ export class Interface<O extends string> {
                 return;
             }
 
-            const fieldName = f.Name.trim();
+            const fieldName = this.service.introspector.adapters.extractName(f);
             const createdField = this.createField(f, fieldName);
 
-            if (createdField) {
-                const field = _.find(this.shape.fields, (fi) => fi.name === createdField.name);
+            if (createdField.name) {
+                const isAlreadyParsed =
+                    this.addedFields.indexOf(f.Name) >= 0 || this.addedFields.indexOf(createdField.name) >= 0;
 
-                if (!field) {
+                if (!isAlreadyParsed) {
+                    this.addedFields.push(createdField.name);
+                    // Name can be changed via JsonProperty,
+                    // but at the same time the class could have getter with the field's original name
+                    this.addedFields.push(f.Name);
+
                     this.shape.fields.push(createdField);
                 }
             }
@@ -92,10 +102,11 @@ export class Interface<O extends string> {
         const field = this.createField(method);
         const extracted = this.service.introspector.adapters.extractFieldFromMethod(method, field);
 
-        if (extracted !== field && extracted.name) {
-            const hasWithTheSameName = _.find(this.shape.fields, (f) => f.name === extracted.name);
+        if (extracted.name) {
+            const hasWithTheSameName = this.addedFields.indexOf(extracted.name) >= 0;
 
             if (!hasWithTheSameName) {
+                this.addedFields.push(extracted.name);
                 this.shape.fields.push(extracted);
             }
         }

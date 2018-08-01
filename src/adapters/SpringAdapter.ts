@@ -112,6 +112,17 @@ export class SpringAdapter implements types.Adapter {
         return result;
     }
 
+    public extractName(field: langion.FieldEntity) {
+        let result = field.Name.trim();
+
+        if ("JsonProperty" in field.Annotations) {
+            result = field.Annotations.JsonProperty.Items.value.Content.trim();
+        }
+
+        result = result.trim();
+        return result;
+    }
+
     public extractFieldFromMethod<O extends string>(method: langion.MethodEntity, field: types.Field<O>) {
         if ("JsonProperty" in method.Annotations) {
             const name = method.Annotations.JsonProperty.Items.value.Content.trim();
@@ -261,6 +272,12 @@ export class SpringAdapter implements types.Adapter {
     }
 
     public shouldAddField(field: langion.FieldEntity) {
+        const hasJsonProperty = "JsonProperty" in field.Annotations;
+
+        if (hasJsonProperty) {
+            return true;
+        }
+
         const result = !!field.Modifiers.Items.Public;
         return result;
     }

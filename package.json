@@ -1,6 +1,6 @@
 {
   "name": "@langion/introspector",
-  "version": "1.0.13",
+  "version": "1.0.18",
   "description": "Introspect Langion format",
   "homepage": "https://github.com/Langion/introspector#readme",
   "bugs": {
@@ -18,7 +18,7 @@
     "build": "tsc",
     "lint": "tslint --project tsconfig.json",
     "lint:fix": "tslint --project tsconfig.json --fix",
-    "prepublish": "npm run build",
+    "prepublish": "npm run build && npm run lint",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {

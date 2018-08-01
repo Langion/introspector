@@ -178,6 +178,7 @@ export class Unificator<O extends string> {
                 for (let i = 1; i < g.length; i++) {
                     const source = g[i];
                     source.shape.name = `${source.shape.name}${i + 1}`;
+                    source.usedIn.forEach((u) => u.name =   source.shape.name);
                 }
             }
         });

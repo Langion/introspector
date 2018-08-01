@@ -1,5 +1,5 @@
 import * as langion from "@langion/langion";
-import { Field, Rest, Type, TypeKind, Method } from "./introspection";
+import { Field, Method, Rest, Type, TypeKind } from "./introspection";
 import { CommentData } from "./Introspector.types";
 
 export interface Adapter {
@@ -22,11 +22,7 @@ export interface Adapter {
         adapters: Adapter[],
     ) => boolean;
 
-    hasParamsInPath?: <O extends string>(
-        method: Method<O>,
-        previous: boolean,
-        adapters: Adapter[],
-    ) => boolean;
+    hasParamsInPath?: <O extends string>(method: Method<O>, previous: boolean, adapters: Adapter[]) => boolean;
 
     getParamsFromStringPath?: <O extends string>(
         method: Method<O>,
@@ -58,6 +54,8 @@ export interface Adapter {
         previous: Array<Field<O>>,
         adapters: Adapter[],
     ) => Array<Field<O>>;
+
+    extractName?: (field: langion.FieldEntity, previous: string, adapters: Adapter[]) => string;
 
     extractFieldFromMethod?: <O extends string>(
         method: langion.MethodEntity,
