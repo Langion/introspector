@@ -14,32 +14,49 @@ export class Entry<O extends string> {
         const controller = this.createController(introspection);
         introspection.controllers.push(controller);
 
-        this.parseController(this.entry, controller, {}, true);
+        this.parseController(this.entry, controller, {});
     }
 
     private parseController(
         entity: langion.ClassEntity | langion.InterfaceEntity,
         controller: types.Controller<O>,
         generics: Record<string, langion.GenericEntity>,
-        hasPriority: boolean,
     ) {
         const map = this.getGenericsMap(entity, generics);
 
+        _.forEach(entity.Methods, (m) => this.parseMethod(m, map, controller));
+
         const parents = this.getParents(entity);
         parents.forEach((p) => this.parseParent(p, controller, generics));
-
-        const methods = _.values(entity.Methods);
-        methods.forEach((m) => this.parseMethod(m, map, controller, hasPriority));
     }
 
     private parseMethod(
-        entity: langion.MethodEntity,
+        entities: langion.MethodEntity[],
         map: Record<string, langion.GenericEntity>,
         controller: types.Controller<O>,
-        hasPriority: boolean,
     ) {
-        const method = new Method(entity, map, controller, this.service, hasPriority);
-        method.parse();
+        entities.forEach((e, i) => {
+            const methodParser = new Method(e, map, controller, this.service, i);
+            const endpoint = methodParser.parse();
+
+            if (!endpoint) {
+                return;
+            }
+
+            const hasMethodWithTheSameName = controller.methods.some((m) => m.name === endpoint.method.name);
+
+            if (!hasMethodWithTheSameName) {
+                controller.methods.push(endpoint.method);
+
+                if (endpoint.params) {
+                    controller.interplay.push(endpoint.params);
+                }
+
+                if (endpoint.query) {
+                    controller.interplay.push(endpoint.query);
+                }
+            }
+        });
     }
 
     private parseParent(
@@ -57,7 +74,7 @@ export class Entry<O extends string> {
 
         const variables = _.sortBy(parent.Variables, (v) => v.Position).map((v) => v.Name);
         const map: Record<string, langion.GenericEntity> = _.zipObject(variables, replaceIfTypeVariableIsGeneric);
-        this.parseController(parent, controller, map, false);
+        this.parseController(parent, controller, map);
     }
 
     private getParents(entity: langion.ClassEntity | langion.InterfaceEntity) {

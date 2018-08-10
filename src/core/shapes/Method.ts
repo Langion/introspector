@@ -11,7 +11,7 @@ export class Method<O extends string> {
         private map: Record<string, langion.GenericEntity>,
         private controller: types.Controller<O>,
         private service: OriginService<O>,
-        private hasPriority: boolean,
+        private index: number,
     ) {}
 
     public parse() {
@@ -30,8 +30,12 @@ export class Method<O extends string> {
             return;
         }
 
+        const result: types.RestMethod<O> = { method };
+
         this.parseReturns(method);
-        this.parseInputData(method);
+        this.parseInputData(method, result);
+
+        return result;
     }
 
     private parseReturns(method: types.Method<O>) {
@@ -54,7 +58,7 @@ export class Method<O extends string> {
         });
     }
 
-    private parseInputData(method: types.Method<O>) {
+    private parseInputData(method: types.Method<O>, result: types.RestMethod<O>) {
         const methodName = method.name[0].toUpperCase() + method.name.slice(1);
 
         const query: types.Interface<O> = {
@@ -80,8 +84,8 @@ export class Method<O extends string> {
         const paramsInPath = this.service.introspector.adapters.getParamsFromStringPath(method);
         this.extractData(method, query, paramsInPath, params);
 
-        this.fillQuerySource(query, method);
-        this.fillParamsSource(params, method);
+        result.query = this.fillQuerySource(query, method);
+        result.params = this.fillParamsSource(params, method);
 
         const hasParamsInPath = this.service.introspector.adapters.hasParamsInPath(method);
         const hasParamsNotInPath = !hasParamsInPath && params.fields.length > 0;
@@ -100,21 +104,8 @@ export class Method<O extends string> {
                 shape: query,
                 usedIn: [],
                 origin: this.controller.origin,
+                addedFrom: this.controller.origin,
             };
-
-            const hasWithTheSameName = method.controller.interplay.some((i) => i.shape.name === source.shape.name);
-
-            if (hasWithTheSameName) {
-                if (this.hasPriority) {
-                    method.controller.interplay = method.controller.interplay.filter(
-                        (i) => i.shape.name !== source.shape.name,
-                    );
-                } else {
-                    return;
-                }
-            }
-
-            method.controller.interplay.push(source);
 
             method.query = {
                 generics: [],
@@ -126,30 +117,21 @@ export class Method<O extends string> {
             };
 
             source.usedIn.push(method.query);
+
+            return source;
         }
+
+        return;
     }
 
     private fillParamsSource(params: types.Interface<O>, method: types.Method<O>) {
         if (!_.isEmpty(params.fields)) {
             const source: types.Source<O> = {
                 origin: this.controller.origin,
+                addedFrom: this.controller.origin,
                 shape: params,
                 usedIn: [],
             };
-
-            const hasWithTheSameName = method.controller.interplay.some((i) => i.shape.name === source.shape.name);
-
-            if (hasWithTheSameName) {
-                if (this.hasPriority) {
-                    method.controller.interplay = method.controller.interplay.filter(
-                        (i) => i.shape.name !== source.shape.name,
-                    );
-                } else {
-                    return;
-                }
-            }
-
-            method.controller.interplay.push(source);
 
             method.params = {
                 isDuplicate: false,
@@ -161,7 +143,11 @@ export class Method<O extends string> {
             };
 
             source.usedIn.push(method.params);
+
+            return source;
         }
+
+        return;
     }
 
     private extractData(
@@ -241,7 +227,9 @@ export class Method<O extends string> {
             isDuplicate: false,
         };
 
-        const name = this.entity.Name;
+        const hasOverloading = this.index > 1;
+
+        const name = hasOverloading ? `${this.entity.Name}${this.index}` : this.entity.Name;
 
         const commentParser = new Comment(this.service, this.entity);
         const comment = commentParser.parse();
@@ -258,18 +246,6 @@ export class Method<O extends string> {
             response: [],
             payload: [],
         };
-
-        const hasMethodWithTheSameName = this.controller.methods.some((m) => m.name === method.name);
-
-        if (hasMethodWithTheSameName) {
-            if (this.hasPriority) {
-                this.controller.methods = this.controller.methods.filter((m) => m.name !== method.name);
-            } else {
-                return null;
-            }
-        }
-
-        this.controller.methods.push(method);
 
         return method;
     }

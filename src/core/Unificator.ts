@@ -99,6 +99,7 @@ export class Unificator<O extends string> {
     private mergeIntrospection(key: O) {
         this.introspections.forEach((i) => {
             const introspectionHasOrigin = key in i;
+
             if (!introspectionHasOrigin) {
                 return;
             }
@@ -123,7 +124,8 @@ export class Unificator<O extends string> {
             this.handleControllersWithEqualShape(introspection);
             this.handleMethodsWithTheSameName(introspection);
             this.handleSourceWithEqualShape(introspection);
-            this.handleSourceWithEqualNameButDifferenShape(introspection);
+            this.handleSourceWithEqualName(introspection);
+            this.handleSourceWithEqualNameInOneOrigin(introspection);
         });
     }
 
@@ -131,11 +133,13 @@ export class Unificator<O extends string> {
         const groupedSources = _.groupBy(introspection.controllers, (c) => c.name);
 
         _.forEach(groupedSources, (g) => {
-            if (g.length > 1) {
-                for (let i = 1; i < g.length; i++) {
-                    const toRemove = g[i];
-                    _.pull(introspection.controllers, toRemove);
-                }
+            if (g.length === 1) {
+                return;
+            }
+
+            for (let i = 1; i < g.length; i++) {
+                const toRemove = g[i];
+                _.pull(introspection.controllers, toRemove);
             }
         });
     }
@@ -145,10 +149,12 @@ export class Unificator<O extends string> {
             const groupedMethods = _.groupBy(c.methods, (s) => s.name);
 
             _.forEach(groupedMethods, (g) => {
-                if (g.length > 1) {
-                    for (let i = 1; i < g.length; i++) {
-                        _.pull(c.methods, g[i]);
-                    }
+                if (g.length === 1) {
+                    return;
+                }
+
+                for (let i = 1; i < g.length; i++) {
+                    _.pull(c.methods, g[i]);
                 }
             });
         });
@@ -158,28 +164,61 @@ export class Unificator<O extends string> {
         const groupedSources = _.groupBy(introspection.sources, (s) => JSON.stringify(s.shape));
 
         _.forEach(groupedSources, (g) => {
-            if (g.length > 1) {
-                const source = g[0];
+            if (g.length === 1) {
+                return;
+            }
 
-                for (let i = 1; i < g.length; i++) {
-                    const toRemove = g[i];
-                    source.usedIn = source.usedIn.concat(toRemove.usedIn);
-                    _.pull(introspection.sources, toRemove);
-                }
+            const source = g[0];
+
+            for (let i = 1; i < g.length; i++) {
+                const toRemove = g[i];
+                source.usedIn = source.usedIn.concat(toRemove.usedIn);
+                _.pull(introspection.sources, toRemove);
             }
         });
     }
 
-    private handleSourceWithEqualNameButDifferenShape(introspection: Record<O, types.Introspection<O>>[O]) {
+    private handleSourceWithEqualName(introspection: Record<O, types.Introspection<O>>[O]) {
         const groupedSourcesByName = _.groupBy(introspection.sources, (s) => s.shape.name);
 
         _.forEach(groupedSourcesByName, (g) => {
-            if (g.length > 1) {
-                for (let i = 1; i < g.length; i++) {
-                    const source = g[i];
-                    source.shape.name = `${source.shape.name}${i + 1}`;
-                    source.usedIn.forEach((u) => u.name =   source.shape.name);
+            if (g.length === 1) {
+                return;
+            }
+
+            g.forEach((source) => {
+                if (introspection.origin !== source.addedFrom) {
+                    _.pull(introspection.sources, source);
+                    source.origin = source.addedFrom;
+
+                    if (!this.unified[introspection.origin]) {
+                        this.unified[introspection.origin] = {
+                            origin: introspection.origin,
+                            controllers: [],
+                            sources: [],
+                        };
+                    }
+
+                    source.origin = introspection.origin;
+                    source.usedIn.forEach((u) => (u.origin = introspection.origin));
+                    this.unified[introspection.origin].sources.push(source);
                 }
+            });
+        });
+    }
+
+    private handleSourceWithEqualNameInOneOrigin(introspection: Record<O, types.Introspection<O>>[O]) {
+        const groupedSourcesByName = _.groupBy(introspection.sources, (s) => s.shape.name);
+
+        _.forEach(groupedSourcesByName, (g) => {
+            if (g.length === 1) {
+                return;
+            }
+
+            for (let i = 1; i < g.length; i++) {
+                const source = g[i];
+                source.shape.name = `${source.shape.name}${i + 1}`;
+                source.usedIn.forEach((u) => (u.name = source.shape.name));
             }
         });
     }

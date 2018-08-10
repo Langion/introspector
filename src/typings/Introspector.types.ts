@@ -1,6 +1,6 @@
 import * as langion from "@langion/langion";
 import { Adapter } from "./Adapter";
-import { Source } from "./introspection";
+import { Method, Source } from "./introspection";
 
 export interface SideOrigin<O extends string> {
     origin: O;
@@ -27,4 +27,10 @@ export interface CommentData {
 export interface ProcessedEntity<O extends string> {
     entity: langion.Entity;
     source: Source<O>;
+}
+
+export interface RestMethod<O extends string> {
+    method: Method<O>;
+    params?: Source<O>;
+    query?: Source<O>;
 }

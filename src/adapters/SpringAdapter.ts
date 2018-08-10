@@ -5,10 +5,7 @@ import * as types from "../typings";
 
 export class SpringAdapter implements types.Adapter {
     public queryEntryPoints(langionDescription: langion.Langion, entryPoints: langion.ClassEntity[]) {
-        const query =
-            "$..Exports[?(@.Annotations.RestController != null" +
-            "|| @.Annotations.Controller != null" +
-            "|| @.Annotations.Service != null)]";
+        const query = "$..Exports[?(@.Annotations.RestController != null || @.Annotations.Controller != null)]";
 
         const controllers: langion.ClassEntity[] = jp.query(langionDescription, query);
         const result = entryPoints.concat(controllers);
@@ -124,6 +121,12 @@ export class SpringAdapter implements types.Adapter {
     }
 
     public extractFieldFromMethod<O extends string>(method: langion.MethodEntity, field: types.Field<O>) {
+        const genericVariables = Object.keys(method.Variables);
+
+        if (genericVariables.length > 0) {
+            return field;
+        }
+
         if ("JsonProperty" in method.Annotations) {
             const name = method.Annotations.JsonProperty.Items.value.Content.trim();
             return { ...field, name };
@@ -242,33 +245,8 @@ export class SpringAdapter implements types.Adapter {
         }
     }
 
-    public getEntryName<O extends string>(entry: langion.ClassEntity, origin: O) {
-        let name = entry.Name;
-
-        // Remove controller word from name
-        const controllerPosition = name.toLowerCase().indexOf("controller");
-
-        if (controllerPosition >= 0) {
-            name = name.slice(0, controllerPosition);
-        }
-
-        // Remove origin name but only if it's not equal to origin.
-        // i.e. we have MyController and the origin is My.
-        // after all this slicing we would got empty string
-        if (_.lowerCase(name) !== _.lowerCase(origin)) {
-            const originPosition = name.toLowerCase().indexOf(origin.toLowerCase());
-
-            if (originPosition === 0) {
-                const nameWithoutOrigin = name.slice(origin.length);
-                const correctName = /[_A-Za-z][_0-9A-Za-z]*/;
-
-                if (correctName.test(nameWithoutOrigin)) {
-                    name = nameWithoutOrigin;
-                }
-            }
-        }
-
-        return name;
+    public getEntryName(entry: langion.ClassEntity) {
+        return entry.Name;
     }
 
     public shouldAddField(field: langion.FieldEntity) {

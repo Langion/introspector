@@ -26,7 +26,7 @@ export class Interface<O extends string> {
 
         this.parseExtends();
         this.parseFields();
-        _.forEach(this.entity.Methods, (m) => this.parseMethod(m));
+        _.forEach(this.entity.Methods, (methods) => methods.forEach((m) => this.parseMethod(m)));
 
         this.handleGenerics();
     }

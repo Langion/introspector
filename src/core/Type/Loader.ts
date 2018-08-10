@@ -41,6 +41,7 @@ export class Loader<O extends string> {
 
         const source: types.Source<O> = {
             origin: introspection.origin,
+            addedFrom: this.service.origin.name,
             shape: interfaze.shape,
             usedIn: [this.type],
         };
@@ -67,6 +68,7 @@ export class Loader<O extends string> {
 
         const source: types.Source<O> = {
             origin: introspection.origin,
+            addedFrom: this.service.origin.name,
             shape: enumeration.shape,
             usedIn: [this.type],
         };
