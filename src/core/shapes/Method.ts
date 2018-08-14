@@ -227,9 +227,9 @@ export class Method<O extends string> {
             isDuplicate: false,
         };
 
-        const hasOverloading = this.index > 1;
+        const hasOverloading = this.index >= 1;
 
-        const name = hasOverloading ? `${this.entity.Name}${this.index}` : this.entity.Name;
+        const name = hasOverloading ? `${this.entity.Name}${this.index + 1}` : this.entity.Name;
 
         const commentParser = new Comment(this.service, this.entity);
         const comment = commentParser.parse();
