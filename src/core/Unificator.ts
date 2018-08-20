@@ -14,6 +14,7 @@ export class Unificator<O extends string> {
         this.sort();
         this.dedupe();
         this.extractSharedSources();
+        this.handleSourcesWithTheSameNameInAllOrigins();
         this.sort();
 
         return this.unified;
@@ -64,6 +65,21 @@ export class Unificator<O extends string> {
 
             this.unified[share.origin].sources.push(source);
             source.origin = share.origin;
+        });
+    }
+
+    private handleSourcesWithTheSameNameInAllOrigins() {
+        let allSources: Array<types.Source<O>> = [];
+        _.forEach(this.unified, (i) => (allSources = allSources.concat(i.sources)));
+
+        const byName = _.groupBy(allSources, (s) => s.shape.name);
+
+        _.forEach(byName, (g) => {
+            if (g.length <= 1) {
+                return;
+            }
+
+            g.forEach((s) => (s.shape.isDuplicate = true));
         });
     }
 
