@@ -49,6 +49,8 @@ export class SwaggerAdapter implements types.Adapter {
             }
         } else if ("ApiParam" in withComment.Annotations) {
             comment = withComment.Annotations.ApiParam.Items.value.Content;
+        } else if ("ApiModelProperty" in withComment.Annotations) {
+            comment = withComment.Annotations.ApiModelProperty.Items.notes.Content;
         }
 
         return comment;

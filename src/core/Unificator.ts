@@ -96,7 +96,13 @@ export class Unificator<O extends string> {
     private sort() {
         _.forEach(this.unified, (i) => {
             i.controllers = _.sortBy(i.controllers, (c) => {
-                c.methods = _.sortBy(c.methods, (m) => m.name);
+                const methods = _.groupBy(c.methods, (m) => m.name);
+                const sortedGroup = _.map(methods, (v, name) => ({ name, methods: _.sortBy(v, (m) => m.path) }));
+                const sorted = _.sortBy(sortedGroup, (m) => m.name);
+
+                c.methods = sorted.reduce<Array<types.Method<O>>>((all, m) => all.concat(m.methods), []);
+                c.interplay = _.sortBy(c.interplay, (m) => m.shape.name);
+
                 return c.name;
             });
 
