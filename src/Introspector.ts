@@ -1,4 +1,5 @@
 import { AdapterInvoker } from "./core/AdapterInvoker";
+import { Comparator } from "./core/Comparator";
 import { OriginService } from "./core/OriginService";
 import { Unificator } from "./core/Unificator";
 import * as types from "./typings";
@@ -10,6 +11,7 @@ export class Introspector<O extends string> {
         return result;
     }
 
+    public comparator = new Comparator<O>();
     public adapters = new AdapterInvoker(this.config.adapters);
     private constructor(public config: types.IntrospectorConfig<O>) {}
 
@@ -22,7 +24,7 @@ export class Introspector<O extends string> {
     }
 
     private unify(introspections: Array<Record<O, types.Introspection<O>>>) {
-        const unificator = new Unificator(introspections, this.config.share);
+        const unificator = new Unificator(introspections, this.comparator, this.config.share);
         const unified = unificator.unify();
         return unified;
     }

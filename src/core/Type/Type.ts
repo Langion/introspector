@@ -103,7 +103,7 @@ export class Type<O extends string> {
                 return;
             }
 
-            const typeCreator = new Type(generic.Type, this.map, this.service);
+            const typeCreator = new Type(generic.Type, {}, this.service);
             const type = typeCreator.getType();
 
             return type;

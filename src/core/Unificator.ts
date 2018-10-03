@@ -1,11 +1,13 @@
 import * as _ from "lodash";
 import * as types from "../typings";
+import { Comparator } from "./Comparator";
 
 export class Unificator<O extends string> {
     private unified = {} as Record<O, types.Introspection<O>>;
 
     constructor(
         private introspections: Array<Record<O, types.Introspection<O>>>,
+        private comparator: Comparator<O>,
         private share?: types.SideOrigin<O>,
     ) {}
 
@@ -38,8 +40,10 @@ export class Unificator<O extends string> {
             }
 
             const source = g[0];
-            const shape = source.shape;
-            const areAllEqual = g.every((s) => _.isEqual(shape, s.shape));
+            const areAllEqual = g.every((s) => {
+                const compare = this.comparator.isEqual(source, s, sources);
+                return compare.isEqual;
+            });
 
             if (!areAllEqual) {
                 g.forEach((s) => (s.shape.isDuplicate = true));
@@ -142,10 +146,13 @@ export class Unificator<O extends string> {
     }
 
     private dedupe() {
+        const unified = _.toArray<types.Introspection<O>>(this.unified);
+        const sources = unified.reduce((all, i) => (all = all.concat(i.sources)), [] as Array<types.Source<O>>);
+
         _.forEach(this.unified, (introspection) => {
             this.handleControllersWithEqualShape(introspection);
             this.handleMethodsWithTheSameName(introspection);
-            this.handleSourceWithEqualShape(introspection);
+            this.handleSourceWithEqualShape(introspection, sources);
             this.handleSourceWithEqualName(introspection);
             this.handleSourceWithEqualNameInOneOrigin(introspection);
         });
@@ -182,20 +189,39 @@ export class Unificator<O extends string> {
         });
     }
 
-    private handleSourceWithEqualShape(introspection: Record<O, types.Introspection<O>>[O]) {
-        const groupedSources = _.groupBy(introspection.sources, (s) => JSON.stringify(s.shape));
+    private handleSourceWithEqualShape(
+        introspection: Record<O, types.Introspection<O>>[O],
+        sources: Array<types.Source<O>>,
+    ) {
+        const groupedSources = _.groupBy(introspection.sources, (s) => s.shape.name);
 
         _.forEach(groupedSources, (g) => {
             if (g.length === 1) {
                 return;
             }
 
-            const source = g[0];
+            const removed: Array<types.Source<O>> = [];
 
-            for (let i = 1; i < g.length; i++) {
-                const toRemove = g[i];
-                source.usedIn = source.usedIn.concat(toRemove.usedIn);
-                _.pull(introspection.sources, toRemove);
+            for (const a of g) {
+                for (const b of g) {
+                    if (a !== b) {
+                        const compare = this.comparator.isEqual(a, b, sources);
+
+                        if (compare.isEqual) {
+                            const shouldRemoveB = compare.a.addedFrom === introspection.origin;
+                            const toRemove = shouldRemoveB ? compare.b : compare.a;
+                            const toStay = toRemove === compare.b ? compare.a : compare.b;
+
+                            const isAlreadyRemoved = removed.some((r) => r === toRemove);
+
+                            if (!isAlreadyRemoved) {
+                                toStay.usedIn = toStay.usedIn.concat(toRemove.usedIn);
+                                _.pull(introspection.sources, toRemove);
+                                removed.push(toRemove);
+                            }
+                        }
+                    }
+                }
             }
         });
     }
@@ -237,11 +263,22 @@ export class Unificator<O extends string> {
                 return;
             }
 
-            for (let i = 1; i < g.length; i++) {
-                const source = g[i];
-                source.shape.name = `${source.shape.name}${i + 1}`;
-                source.usedIn.forEach((u) => (u.name = source.shape.name));
-            }
+            g.sort((s) => (s.addedFrom === introspection.origin ? 0 : 1));
+
+            g.forEach((s) => {
+                s.shape.name =
+                    s.addedFrom === introspection.origin ? s.shape.name : `${s.shape.name}__${s.addedFrom}`;
+
+                s.usedIn.forEach((u) => (u.name = s.shape.name));
+
+                const comment = `@From ${s.addedFrom}`;
+
+                if (s.shape.comment) {
+                    s.shape.comment += `\n${comment}`;
+                } else {
+                    s.shape.comment = comment;
+                }
+            });
         });
     }
 }

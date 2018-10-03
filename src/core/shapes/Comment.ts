@@ -32,7 +32,7 @@ export class Comment<O extends string> {
 
     private removeLineBreaks(comment: string[]) {
         const anySpace = /\s/g;
-        const line = comment.join("");
+        const line = comment.join(" ");
         const oneSpace = line.replace(anySpace, " ");
         return oneSpace;
     }

@@ -1,6 +1,6 @@
 {
   "name": "@langion/introspector",
-  "version": "1.0.29",
+  "version": "1.0.32",
   "description": "Introspect Langion format",
   "homepage": "https://github.com/Langion/introspector#readme",
   "bugs": {
@@ -22,7 +22,7 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
-    "@langion/langion": "1.0.2",
+    "@langion/langion": "1.0.3",
     "@types/jsonpath": "0.2.0",
     "@types/lodash": "4.14.110",
     "@types/node": "10.5.1",
