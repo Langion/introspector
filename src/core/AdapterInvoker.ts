@@ -15,11 +15,11 @@ export class AdapterInvoker implements types.Adapter {
 
     public loadAdditionalData(
         paths: Record<string, langion.Entity>,
-        langion: langion.Langion,
+        langionEntity: langion.Langion,
         initial: langion.Entity[] = [],
     ) {
         const result = this.adapters.reduce(
-            (p, a) => (a.loadAdditionalData ? a.loadAdditionalData(paths, langion, p, this.adapters) : p),
+            (p, a) => (a.loadAdditionalData ? a.loadAdditionalData(paths, langionEntity, p, this.adapters) : p),
             initial,
         );
 

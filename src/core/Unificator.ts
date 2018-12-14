@@ -13,6 +13,8 @@ export class Unificator<O extends string> {
 
     public unify() {
         this.merge();
+
+        this.addOrigins();
         this.sort();
         this.dedupe();
         this.extractSharedSources();
@@ -22,17 +24,35 @@ export class Unificator<O extends string> {
         return this.unified;
     }
 
+    private addOrigins() {
+        let allSources: Array<types.Source<O>> = [];
+        _.forEach(this.unified, (i) => (allSources = allSources = allSources.concat(i.sources)));
+
+        allSources.forEach((s) => {
+            if (s.origin === s.addedFrom) {
+                return;
+            }
+
+            const comment = `@Origin ${s.origin}`;
+
+            if (s.shape.comment) {
+                s.shape.comment += `\n${comment}`;
+            } else {
+                s.shape.comment = comment;
+            }
+        });
+    }
+
     private extractSharedSources() {
         if (!this.share) {
             return;
         }
 
+        let allSources: Array<types.Source<O>> = [];
+        _.forEach(this.unified, (i) => (allSources = allSources = allSources.concat(i.sources)));
+
         const share = this.share;
-
-        let sources: Array<types.Source<O>> = [];
-        _.forEach(this.unified, (i) => (sources = sources = sources.concat(i.sources)));
-
-        const sourceByName = _.groupBy(sources, (s) => s.shape.name);
+        const sourceByName = _.groupBy(allSources, (s) => s.shape.name);
 
         _.forEach(sourceByName, (g) => {
             if (g.length <= 1) {
@@ -41,7 +61,7 @@ export class Unificator<O extends string> {
 
             const source = g[0];
             const areAllEqual = g.every((s) => {
-                const compare = this.comparator.isEqual(source, s, sources);
+                const compare = this.comparator.isEqual(source, s, allSources);
                 return compare.isEqual;
             });
 
@@ -74,8 +94,7 @@ export class Unificator<O extends string> {
 
     private handleSourcesWithTheSameNameInAllOrigins() {
         let allSources: Array<types.Source<O>> = [];
-        _.forEach(this.unified, (i) => (allSources = allSources.concat(i.sources)));
-
+        _.forEach(this.unified, (i) => (allSources = allSources = allSources.concat(i.sources)));
         const byName = _.groupBy(allSources, (s) => s.shape.name);
 
         _.forEach(byName, (g) => {
@@ -146,13 +165,11 @@ export class Unificator<O extends string> {
     }
 
     private dedupe() {
-        const unified = _.toArray<types.Introspection<O>>(this.unified);
-        const sources = unified.reduce((all, i) => (all = all.concat(i.sources)), [] as Array<types.Source<O>>);
 
         _.forEach(this.unified, (introspection) => {
             this.handleControllersWithEqualShape(introspection);
             this.handleMethodsWithTheSameName(introspection);
-            this.handleSourceWithEqualShape(introspection, sources);
+            this.handleSourceWithEqualShape(introspection);
             this.handleSourceWithEqualName(introspection);
             this.handleSourceWithEqualNameInOneOrigin(introspection);
         });
@@ -191,8 +208,10 @@ export class Unificator<O extends string> {
 
     private handleSourceWithEqualShape(
         introspection: Record<O, types.Introspection<O>>[O],
-        sources: Array<types.Source<O>>,
     ) {
+
+        let allSources: Array<types.Source<O>> = [];
+        _.forEach(this.unified, (i) => (allSources = allSources = allSources.concat(i.sources)));
         const groupedSources = _.groupBy(introspection.sources, (s) => s.shape.name);
 
         _.forEach(groupedSources, (g) => {
@@ -205,7 +224,7 @@ export class Unificator<O extends string> {
             for (const a of g) {
                 for (const b of g) {
                     if (a !== b) {
-                        const compare = this.comparator.isEqual(a, b, sources);
+                        const compare = this.comparator.isEqual(a, b, allSources);
 
                         if (compare.isEqual) {
                             const shouldRemoveB = compare.a.addedFrom === introspection.origin;
@@ -266,8 +285,7 @@ export class Unificator<O extends string> {
             g.sort((s) => (s.addedFrom === introspection.origin ? 0 : 1));
 
             g.forEach((s) => {
-                s.shape.name =
-                    s.addedFrom === introspection.origin ? s.shape.name : `${s.shape.name}__${s.addedFrom}`;
+                s.shape.name = s.addedFrom === introspection.origin ? s.shape.name : `${s.shape.name}__${s.addedFrom}`;
 
                 s.usedIn.forEach((u) => (u.name = s.shape.name));
 

@@ -21,6 +21,7 @@ export class Loader<O extends string> {
         const entity = this.service.getEntity(this.entity.Path);
 
         if (!entity) {
+            // tslint:disable-next-line:no-console
             console.error(`Cannot load "${this.entity.Path}"`);
             return;
         }
