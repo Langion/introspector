@@ -19,7 +19,10 @@ export class SwaggerAdapter implements types.Adapter {
                 if (hasSomething) {
                     return true;
                 } else if (generics.length) {
-                    const fromGeneric = generics.some((k) => searchSimilarTypes(t.Generics[k].Type));
+                    const fromGeneric = generics
+                        .filter((k) => !!t.Generics[k].Type)
+                        .some((k) => searchSimilarTypes(t.Generics[k].Type));
+
                     return fromGeneric;
                 }
 

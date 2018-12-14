@@ -1,6 +1,6 @@
 {
   "name": "@langion/introspector",
-  "version": "1.0.36",
+  "version": "1.0.37",
   "description": "Introspect Langion format",
   "homepage": "https://github.com/Langion/introspector#readme",
   "bugs": {
