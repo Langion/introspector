@@ -12,10 +12,11 @@ export class Unificator<O extends string> {
     ) {}
 
     public unify() {
-        this.sort();
+        debugger;
         this.startUnification();
         this.handleSourcesIfTheyDeletedFromAnotherOrigin();
         this.addOrigins();
+        this.sort();
 
         return this.unified;
     }
