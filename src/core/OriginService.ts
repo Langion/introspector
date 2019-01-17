@@ -49,7 +49,7 @@ export class OriginService<O extends string> {
 
     private getIntrospection(origin: O) {
         if (!this.introspections[origin]) {
-            this.introspections[origin] = { origin, controllers: [], sources: [] };
+            this.introspections[origin] = { origin, addedFrom: this.origin.name, controllers: [], sources: [] };
         }
 
         return this.introspections[origin];

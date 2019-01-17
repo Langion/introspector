@@ -118,6 +118,7 @@ export class Entry<O extends string> {
             comment,
             name,
             origin: introspection.origin,
+            addedFrom: this.service.origin.name,
             interplay: [],
             isDuplicate: false,
             methods: [],

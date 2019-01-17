@@ -2,16 +2,19 @@ import * as langion from "@langion/langion";
 import { Adapter } from "./Adapter";
 import { Method, Source } from "./introspection";
 
-export interface SideOrigin<O extends string> {
-    origin: O;
-    name: string;
-}
+/** If we have several entities with the same name in one origin that was added from another origins */
+
+export type UnificationStrategy =
+    /** We make deep compare and if the entities are diffirent we add postfix with addedFrom origin name */
+    | "Postfix"
+    /** We add only origins where added from equals origin */
+    | "OnlyOrigin";
 
 export interface IntrospectorConfig<O extends string> {
     origins: Array<Origin<O>>;
     getOriginFromModuleName: (path: string) => O;
-    share?: SideOrigin<O>;
     adapters: Adapter[];
+    unification?: UnificationStrategy;
 }
 
 export interface Origin<O extends string> {

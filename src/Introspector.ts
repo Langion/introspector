@@ -24,7 +24,7 @@ export class Introspector<O extends string> {
     }
 
     private unify(introspections: Array<Record<O, types.Introspection<O>>>) {
-        const unificator = new Unificator(introspections, this.comparator, this.config.share);
+        const unificator = new Unificator(introspections, this.comparator, this.config.unification);
         const unified = unificator.unify();
         return unified;
     }

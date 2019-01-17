@@ -1,5 +1,6 @@
 export interface Introspection<O extends string> {
     origin: O;
+    addedFrom: O;
     sources: Array<Source<O>>;
     controllers: Array<Controller<O>>;
 }
@@ -48,6 +49,7 @@ export interface Controller<O extends string> extends Shape {
     interplay: Array<Source<O>>;
     methods: Array<Method<O>>;
     origin: O;
+    addedFrom: O;
     base: string;
 }
 
