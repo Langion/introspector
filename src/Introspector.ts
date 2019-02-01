@@ -1,7 +1,6 @@
 import { AdapterInvoker } from "./core/AdapterInvoker";
-import { Comparator } from "./core/Comparator";
 import { OriginService } from "./core/OriginService";
-import { Unificator } from "./core/Unificator";
+import { Comparator, Unificator } from "./core/Unificator";
 import * as types from "./typings";
 
 export class Introspector<O extends string> {
@@ -12,7 +11,8 @@ export class Introspector<O extends string> {
     }
 
     public comparator = new Comparator<O>();
-    public adapters = new AdapterInvoker(this.config.adapters);
+    public adapters = new AdapterInvoker<O>(this.config.adapters);
+
     private constructor(public config: types.IntrospectorConfig<O>) {}
 
     private async introspect() {

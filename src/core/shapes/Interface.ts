@@ -62,12 +62,12 @@ export class Interface<O extends string> {
         }
 
         _.forEach(this.entity.Fields, (f) => {
-            const shouldAdd = this.service.introspector.adapters.shouldAddField(f);
+            const shouldAdd = this.service.introspector.adapters.shouldAddField(f, undefined, this.service.origin.name);
             if (!shouldAdd) {
                 return;
             }
 
-            const fieldName = this.service.introspector.adapters.extractName(f);
+            const fieldName = this.service.introspector.adapters.extractName(f, undefined, this.service.origin.name);
             const createdField = this.createField(f, fieldName);
 
             if (createdField.name) {
@@ -100,14 +100,19 @@ export class Interface<O extends string> {
 
     private parseMethod(method: langion.MethodEntity) {
         const field = this.createField(method);
-        const extracted = this.service.introspector.adapters.extractFieldFromMethod(method, field);
+        const extractedFromMethod = this.service.introspector.adapters.extractFieldFromMethod(
+            method,
+            field,
+            undefined,
+            this.service.origin.name,
+        );
 
-        if (extracted.name) {
-            const hasWithTheSameName = this.addedFields.indexOf(extracted.name) >= 0;
+        if (extractedFromMethod.name) {
+            const hasWithTheSameName = this.addedFields.indexOf(extractedFromMethod.name) >= 0;
 
             if (!hasWithTheSameName) {
-                this.addedFields.push(extracted.name);
-                this.shape.fields.push(extracted);
+                this.addedFields.push(extractedFromMethod.name);
+                this.shape.fields.push(extractedFromMethod);
             }
         }
     }
@@ -123,7 +128,7 @@ export class Interface<O extends string> {
 
         const type = typeCreator.getType();
 
-        const isRequired = this.service.introspector.adapters.isRequired(entity);
+        const isRequired = this.service.introspector.adapters.isRequired(entity, undefined, this.service.origin.name);
 
         const field: types.Field<O> = {
             comment,

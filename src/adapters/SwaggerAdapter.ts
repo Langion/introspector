@@ -1,7 +1,7 @@
 import * as langion from "@langion/langion";
 import * as types from "../typings";
 
-export class SwaggerAdapter implements types.Adapter {
+export class SwaggerAdapter<O extends string> implements types.Adapter<O> {
     public getMethodReturns(method: langion.MethodEntity, previousParsedMethodReturn: langion.TypeEntity[]) {
         let result: langion.TypeEntity[] = [];
 

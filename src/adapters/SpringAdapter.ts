@@ -3,7 +3,7 @@ import * as jp from "jsonpath";
 import * as _ from "lodash";
 import * as types from "../typings";
 
-export class SpringAdapter implements types.Adapter {
+export class SpringAdapter<O extends string> implements types.Adapter<O> {
     public queryEntryPoints(langionDescription: langion.Langion, entryPoints: langion.ClassEntity[]) {
         const query = "$..Exports[?(@.Annotations.RestController != null || @.Annotations.Controller != null)]";
 
@@ -36,13 +36,13 @@ export class SpringAdapter implements types.Adapter {
         return result;
     }
 
-    public hasParamsInPath<O extends string>(method: types.Method<O>) {
+    public hasParamsInPath(method: types.Method<O>) {
         const hasParamsInPath = /[{}]/gm;
         const result = hasParamsInPath.test(method.path);
         return result;
     }
 
-    public getParamsFromStringPath<O extends string>(method: types.Method<O>, previous: string[]) {
+    public getParamsFromStringPath(method: types.Method<O>, previous: string[]) {
         let result = previous;
 
         const params = method.path.match(/\{(\w+)\}/g);
@@ -55,20 +55,17 @@ export class SpringAdapter implements types.Adapter {
         return result;
     }
 
-    public getMethodPayload<O extends string>(
-        argument: langion.ArgumentEntity,
-        type: types.Type<O>,
-        previous: Array<types.Type<O>>,
-    ) {
+    public getMethodPayload(argument: langion.ArgumentEntity, type: types.Type<O>, previous: Array<types.Type<O>>) {
         let result = previous;
 
         if ("RequestBody" in argument.Annotations) {
             result = result.concat(type);
         }
+
         return result;
     }
 
-    public getQueryFields<O extends string>(
+    public getQueryFields(
         argument: langion.ArgumentEntity,
         type: types.Type<O>,
         comment: string,
@@ -85,7 +82,7 @@ export class SpringAdapter implements types.Adapter {
         return result;
     }
 
-    public getParamsFields?<O extends string>(
+    public getParamsFields?(
         argument: langion.ArgumentEntity,
         type: types.Type<O>,
         comment: string,
@@ -120,7 +117,7 @@ export class SpringAdapter implements types.Adapter {
         return result;
     }
 
-    public extractFieldFromMethod<O extends string>(method: langion.MethodEntity, field: types.Field<O>) {
+    public extractFieldFromMethod(method: langion.MethodEntity, field: types.Field<O>) {
         const genericVariables = Object.keys(method.Variables);
 
         if (genericVariables.length > 0) {

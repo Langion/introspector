@@ -15,7 +15,7 @@ export class Method<O extends string> {
     ) {}
 
     public parse() {
-        const rest = this.service.introspector.adapters.getRest(this.entity);
+        const rest = this.service.introspector.adapters.getRest(this.entity, undefined, this.service.origin.name);
 
         if (!rest) {
             return;
@@ -39,7 +39,11 @@ export class Method<O extends string> {
     }
 
     private parseReturns(method: types.Method<O>) {
-        const returns = this.service.introspector.adapters.getMethodReturns(this.entity, [this.entity.Returns]);
+        const returns = this.service.introspector.adapters.getMethodReturns(
+            this.entity,
+            [this.entity.Returns],
+            this.service.origin.name,
+        );
 
         const allResponses = returns.map((r) => {
             const typeCreator = new Type(r, this.map, this.service);
@@ -81,13 +85,21 @@ export class Method<O extends string> {
             kind: "Interface",
         };
 
-        const paramsInPath = this.service.introspector.adapters.getParamsFromStringPath(method);
+        const paramsInPath = this.service.introspector.adapters.getParamsFromStringPath(
+            method,
+            undefined,
+            this.service.origin.name,
+        );
         this.extractData(method, query, paramsInPath, params);
 
         result.query = this.fillQuerySource(query, method);
         result.params = this.fillParamsSource(params, method);
 
-        const hasParamsInPath = this.service.introspector.adapters.hasParamsInPath(method);
+        const hasParamsInPath = this.service.introspector.adapters.hasParamsInPath(
+            method,
+            undefined,
+            this.service.origin.name,
+        );
         const hasParamsNotInPath = !hasParamsInPath && params.fields.length > 0;
 
         if (hasParamsNotInPath) {
@@ -164,10 +176,21 @@ export class Method<O extends string> {
             const commentCreator = new Comment(this.service, a);
             const comment = commentCreator.parse() || "";
 
-            const methodPayload = this.service.introspector.adapters.getMethodPayload(a, type);
+            const methodPayload = this.service.introspector.adapters.getMethodPayload(
+                a,
+                type,
+                undefined,
+                this.service.origin.name,
+            );
             method.payload = method.payload.concat(methodPayload);
 
-            const methodQuery = this.service.introspector.adapters.getQueryFields(a, type, comment);
+            const methodQuery = this.service.introspector.adapters.getQueryFields(
+                a,
+                type,
+                comment,
+                undefined,
+                this.service.origin.name,
+            );
             query.fields = query.fields.concat(methodQuery);
 
             const methodParams = this.service.introspector.adapters.getParamsFields(
@@ -176,6 +199,8 @@ export class Method<O extends string> {
                 comment,
                 paramsInPath,
                 currentParam,
+                undefined,
+                this.service.origin.name,
             );
 
             if (methodParams.length) {

@@ -2,88 +2,97 @@ import * as langion from "@langion/langion";
 import { Field, Method, Rest, Type, TypeKind } from "./introspection";
 import { CommentData } from "./Introspector.types";
 
-export interface Adapter {
+export interface Adapter<O extends string> {
     queryEntryPoints?: (
         langionDescription: langion.Langion,
         previous: langion.ClassEntity[],
-        adapters: Adapter[],
+        origin: O,
+        adapters: Array<Adapter<O>>,
     ) => langion.ClassEntity[];
 
     loadAdditionalData?: (
         paths: Record<string, langion.Entity>,
         langion: langion.Langion,
         previous: langion.Entity[],
-        adapters: Adapter[],
+        origin: O,
+        adapters: Array<Adapter<O>>,
     ) => langion.Entity[];
 
     isRequired?: (
         entity: langion.FieldEntity | langion.MethodEntity,
         previous: boolean,
-        adapters: Adapter[],
+        origin: O,
+        adapters: Array<Adapter<O>>,
     ) => boolean;
 
-    hasParamsInPath?: <O extends string>(method: Method<O>, previous: boolean, adapters: Adapter[]) => boolean;
+    hasParamsInPath?: (method: Method<O>, previous: boolean, origin: O, adapters: Array<Adapter<O>>) => boolean;
 
-    getParamsFromStringPath?: <O extends string>(
+    getParamsFromStringPath?: (
         method: Method<O>,
         previous: string[],
-        adapters: Adapter[],
+        origin: O,
+        adapters: Array<Adapter<O>>,
     ) => string[];
 
-    getMethodPayload?: <O extends string>(
+    getMethodPayload?: (
         argument: langion.ArgumentEntity,
         type: Type<O>,
         previous: Array<Type<O>>,
-        adapters: Adapter[],
+        origin: O,
+        adapters: Array<Adapter<O>>,
     ) => Array<Type<O>>;
 
-    getQueryFields?: <O extends string>(
+    getQueryFields?: (
         argument: langion.ArgumentEntity,
         type: Type<O>,
         comment: string,
         previous: Array<Field<O>>,
-        adapters: Adapter[],
+        origin: O,
+        adapters: Array<Adapter<O>>,
     ) => Array<Field<O>>;
 
-    getParamsFields?: <O extends string>(
+    getParamsFields?: (
         argument: langion.ArgumentEntity,
         type: Type<O>,
         comment: string,
         paramsInPath: string[],
         currentParam: number,
         previous: Array<Field<O>>,
-        adapters: Adapter[],
+        origin: O,
+        adapters: Array<Adapter<O>>,
     ) => Array<Field<O>>;
 
-    extractName?: (field: langion.FieldEntity, previous: string, adapters: Adapter[]) => string;
+    extractName?: (field: langion.FieldEntity, previous: string, origin: O, adapters: Array<Adapter<O>>) => string;
 
-    extractFieldFromMethod?: <O extends string>(
+    extractFieldFromMethod?: (
         method: langion.MethodEntity,
         field: Field<O>,
         previous: Field<O>,
-        adapters: Adapter[],
+        origin: O,
+        adapters: Array<Adapter<O>>,
     ) => Field<O>;
 
-    getKind?: (entity: langion.TypeEntity, previous: TypeKind, adapters: Adapter[]) => TypeKind;
+    getKind?: (entity: langion.TypeEntity, previous: TypeKind, origin: O, adapters: Array<Adapter<O>>) => TypeKind;
 
-    getBasePath?: (entry: langion.ClassEntity, previous: string, adapters: Adapter[]) => string;
+    getBasePath?: (entry: langion.ClassEntity, previous: string, origin: O, adapters: Array<Adapter<O>>) => string;
 
-    getRest?: (method: langion.MethodEntity, previous: Rest | null, adapters: Adapter[]) => Rest | null;
+    getRest?: (
+        method: langion.MethodEntity,
+        previous: Rest | null,
+        origin: O,
+        adapters: Array<Adapter<O>>,
+    ) => Rest | null;
 
     getMethodReturns?: (
         method: langion.MethodEntity,
         previousParsedMethodReturn: langion.TypeEntity[],
-        adapters: Adapter[],
+        origin: O,
+        adapters: Array<Adapter<O>>,
     ) => langion.TypeEntity[];
 
-    getEntryName?: <O extends string>(
-        entry: langion.ClassEntity,
-        origin: O,
-        previous: string,
-        adapters: Adapter[],
-    ) => string;
+    getEntryName?: (entry: langion.ClassEntity, previous: string, origin: O, adapters: Array<Adapter<O>>) => string;
 
-    getComment?: (withComment: CommentData, previous: string, adapters: Adapter[]) => string;
+    getComment?: (withComment: CommentData, previous: string, origin: O, adapters: Array<Adapter<O>>) => string;
 
-    shouldAddField?: (field: langion.FieldEntity, previous: boolean, adapters: Adapter[]) => boolean;
+    shouldAddField?: (field: langion.FieldEntity, previous: boolean, origin: O, adapters: Array<Adapter<O>>) => boolean;
 }

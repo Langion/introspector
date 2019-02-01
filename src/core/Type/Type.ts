@@ -26,7 +26,7 @@ export class Type<O extends string> {
     }
 
     private extractType(introspection: types.Introspection<O>) {
-        const kind = this.service.introspector.adapters.getKind(this.entity);
+        const kind = this.service.introspector.adapters.getKind(this.entity, undefined, this.service.origin.name);
         const name = this.entity.Name;
 
         const type: types.Type<O> = {

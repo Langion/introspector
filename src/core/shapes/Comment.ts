@@ -5,7 +5,7 @@ export class Comment<O extends string> {
     constructor(private service: OriginService<O>, private data: types.CommentData) {}
 
     public parse() {
-        const comment = this.service.introspector.adapters.getComment(this.data);
+        const comment = this.service.introspector.adapters.getComment(this.data, undefined, this.service.origin.name);
         const withoutCommentSigns = this.removeCommentSigns(comment);
         const oneLine = this.removeLineBreaks(withoutCommentSigns);
 

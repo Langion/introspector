@@ -68,8 +68,8 @@ export class Entry<O extends string> {
         const sorted = _.sortBy(type.Generics, (g) => g.Position);
 
         // Когда в качестве дженерика выступает TypeParam, но ему нужно установить новый порядок
-        const replaceIfTypeVariableIsGeneric = sorted.map(
-            (g) => (generics[g.Name] ? { ...generics[g.Name], Position: g.Position } : g),
+        const replaceIfTypeVariableIsGeneric = sorted.map((g) =>
+            generics[g.Name] ? { ...generics[g.Name], Position: g.Position } : g,
         );
 
         const variables = _.sortBy(parent.Variables, (v) => v.Position).map((v) => v.Name);
@@ -107,8 +107,8 @@ export class Entry<O extends string> {
     }
 
     private createController(introspection: types.Introspection<O>) {
-        const base = this.service.introspector.adapters.getBasePath(this.entry);
-        const name = this.service.introspector.adapters.getEntryName(this.entry, this.service.origin.name);
+        const base = this.service.introspector.adapters.getBasePath(this.entry, undefined, this.service.origin.name);
+        const name = this.service.introspector.adapters.getEntryName(this.entry, undefined, this.service.origin.name);
 
         const commentParser = new Comment(this.service, this.entry);
         const comment = commentParser.parse();

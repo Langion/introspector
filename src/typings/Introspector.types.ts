@@ -13,7 +13,7 @@ export type UnificationStrategy =
 export interface IntrospectorConfig<O extends string> {
     origins: Array<Origin<O>>;
     getOriginFromModuleName: (path: string) => O;
-    adapters: Adapter[];
+    adapters: Array<Adapter<O>>;
     unification?: UnificationStrategy;
 }
 

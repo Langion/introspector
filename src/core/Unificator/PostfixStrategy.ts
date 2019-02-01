@@ -1,153 +1,13 @@
 import * as _ from "lodash";
-import * as types from "../typings";
-import {Comparator} from "./Comparator";
+import * as types from "../../typings";
+import { UnificationStrategy } from "./UnificationStrategy";
 
-export class Unificator<O extends string> {
-    private unified = {} as Record<O, types.Introspection<O>>;
-
-    constructor(
-        private introspections: Array<Record<O, types.Introspection<O>>>,
-        private comparator: Comparator<O>,
-        private unification?: types.UnificationStrategy,
-    ) {}
-
-    public unify() {
-        debugger;
-        this.startUnification();
-        this.handleSourcesIfTheyDeletedFromAnotherOrigin();
-        this.addOrigins();
-        this.sort();
-
-        return this.unified;
-    }
-
-    private startUnification() {
-        switch (this.unification) {
-            case "Postfix":
-                this.processPostfixStrategy();
-                break;
-            case "OnlyOrigin":
-            default:
-                this.processOnlyOriginStrategy();
-        }
-    }
-
-    private processOnlyOriginStrategy() {
-        _.forEach(this.introspections, (introspections) =>
-            _.forEach(introspections, (introspection) => {
-                if (!this.unified[introspection.origin] || introspection.origin === introspection.addedFrom) {
-                    this.unified[introspection.origin] = introspection;
-                }
-            }),
-        );
-    }
-
-    private processPostfixStrategy() {
+export class PostfixStrategy<O extends string> extends UnificationStrategy<O> {
+    public process() {
         this.merge();
         this.sort();
         this.dedupe();
         this.handleSourcesWithTheSameNameInAllOrigins();
-    }
-
-    private addOrigins() {
-        let allSources: Array<types.Source<O>> = [];
-        _.forEach(this.unified, (i) => (allSources = allSources = allSources.concat(i.sources)));
-
-        allSources.forEach((s) => {
-            if (s.origin === s.addedFrom) {
-                return;
-            }
-
-            const comment = `@Origin ${s.origin}`;
-
-            if (s.shape.comment) {
-                if (s.shape.comment.indexOf(comment) < 0) {
-                    s.shape.comment += `\n${comment}`;
-                }
-            } else {
-                s.shape.comment = comment;
-            }
-        });
-    }
-
-    private handleSourcesIfTheyDeletedFromAnotherOrigin() {
-        const hash = {} as Record<O, Record<string, types.Source<O>>>;
-
-        _.forEach(this.unified, (i) => {
-            if (!hash[i.origin]) {
-                hash[i.origin] = {};
-            }
-
-            i.sources.forEach((s) => (hash[i.origin][s.shape.name] = s));
-        });
-
-        const processSource = (s: types.Source<O>, addedFrom?: O) => {
-            if (s.shape.kind !== "Interface") {
-                return;
-            }
-
-            const addedFromOrigin = addedFrom || s.addedFrom;
-            s.shape.fields.forEach((f) => processType(f.type, addedFromOrigin));
-            s.shape.extends.forEach((e) => processType(e, addedFromOrigin));
-        };
-
-        const processType = (type: types.Type<O>, addedFrom: O) => {
-            type.generics.forEach((g) => processType(g.type, addedFrom));
-
-            if (
-                hash[type.origin][type.name] ||
-                type.kind === types.TypeKind.Boolean ||
-                type.kind === types.TypeKind.Date ||
-                type.kind === types.TypeKind.Number ||
-                type.kind === types.TypeKind.String ||
-                type.kind === types.TypeKind.TypeParameter ||
-                type.kind === types.TypeKind.Void
-            ) {
-                return;
-            }
-
-            _.forEach(this.introspections, (introspections) =>
-                _.forEach(introspections, (introspection) => {
-                    if (introspection.addedFrom === addedFrom && introspection.origin === type.origin) {
-                        const sourceThatWasDeleted = introspection.sources.find((s) => s.shape.name === type.name);
-
-                        if (sourceThatWasDeleted) {
-                            this.unified[type.origin].sources.push(sourceThatWasDeleted);
-                            hash[type.origin][type.name] = sourceThatWasDeleted;
-                            processSource(sourceThatWasDeleted, addedFrom);
-                        }
-                    }
-                }),
-            );
-        };
-
-        _.forEach(this.unified, (i) => {
-            i.sources.forEach((s) => processSource(s));
-            i.controllers.forEach((c) => {
-                c.interplay.forEach((int) => processSource(int, c.addedFrom));
-
-                c.methods.forEach((m) => {
-                    processType(m.params, c.addedFrom);
-                    processType(m.query, c.addedFrom);
-                    m.payload.forEach((p) => processType(p, c.addedFrom));
-                    m.response.forEach((p) => processType(p, c.addedFrom));
-                });
-            });
-        });
-    }
-
-    private handleSourcesWithTheSameNameInAllOrigins() {
-        let allSources: Array<types.Source<O>> = [];
-        _.forEach(this.unified, (i) => (allSources = allSources = allSources.concat(i.sources)));
-        const byName = _.groupBy(allSources, (s) => s.shape.name);
-
-        _.forEach(byName, (g) => {
-            if (g.length <= 1) {
-                return;
-            }
-
-            g.forEach((s) => (s.shape.isDuplicate = true));
-        });
     }
 
     private merge() {
@@ -158,31 +18,6 @@ export class Unificator<O extends string> {
 
         const keys = _.uniq(allOrigins);
         keys.forEach((k) => this.mergeIntrospection(k as O));
-    }
-
-    private sort() {
-        _.forEach(this.unified, (i) => {
-            i.controllers = _.sortBy(i.controllers, (c) => {
-                const methods = _.groupBy(c.methods, (m) => m.name);
-                const sortedGroup = _.map(methods, (v, name) => ({name, methods: _.sortBy(v, (m) => m.path)}));
-                const sorted = _.sortBy(sortedGroup, (m) => m.name);
-
-                c.methods = sorted.reduce<Array<types.Method<O>>>((all, m) => all.concat(m.methods), []);
-                c.interplay = _.sortBy(c.interplay, (m) => m.shape.name);
-
-                return c.name;
-            });
-
-            i.sources = _.sortBy(i.sources, (s) => {
-                if (s.shape.kind === "Enumeration") {
-                    s.shape.values = _.sortBy(s.shape.values, (v) => v.key);
-                } else {
-                    s.shape.fields = _.sortBy(s.shape.fields, (f) => f.name);
-                }
-
-                return s.shape.name;
-            });
-        });
     }
 
     private mergeIntrospection(key: O) {
@@ -339,6 +174,20 @@ export class Unificator<O extends string> {
                     s.shape.comment = comment;
                 }
             });
+        });
+    }
+
+    private handleSourcesWithTheSameNameInAllOrigins() {
+        let allSources: Array<types.Source<O>> = [];
+        _.forEach(this.unified, (i) => (allSources = allSources = allSources.concat(i.sources)));
+        const byName = _.groupBy(allSources, (s) => s.shape.name);
+
+        _.forEach(byName, (g) => {
+            if (g.length <= 1) {
+                return;
+            }
+
+            g.forEach((s) => (s.shape.isDuplicate = true));
         });
     }
 }

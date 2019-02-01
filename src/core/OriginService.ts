@@ -16,7 +16,7 @@ export class OriginService<O extends string> {
         const langionDescription = await this.origin.getLangion();
 
         this.fillPaths(langionDescription.Modules);
-        let entryPoints = this.introspector.adapters.queryEntryPoints(langionDescription);
+        let entryPoints = this.introspector.adapters.queryEntryPoints(langionDescription, undefined, this.origin.name);
         entryPoints = _.uniq(entryPoints);
 
         entryPoints.forEach((e) => this.parseEntryPoint(e));
@@ -68,7 +68,12 @@ export class OriginService<O extends string> {
     }
 
     private loadAdditionalEntities(langionDescription: langion.Langion) {
-        const entities = this.introspector.adapters.loadAdditionalData(this.paths, langionDescription);
+        const entities = this.introspector.adapters.loadAdditionalData(
+            this.paths,
+            langionDescription,
+            undefined,
+            this.origin.name,
+        );
 
         entities.forEach((e) => {
             const type = new Type(
