@@ -19,6 +19,7 @@ export class Unificator<O extends string> {
 
         this.handleSourcesIfTheyDeletedFromAnotherOrigin();
         this.addOrigins();
+        this.handleSourcesWithTheSameNameInAllOrigins();
 
         unification.sort();
 
@@ -28,16 +29,27 @@ export class Unificator<O extends string> {
     private getUnificationStrategy() {
         switch (this.unification) {
             case "Postfix":
-                return new PostfixStrategy(this.unified, this.introspections, this.comparator);
+                return new PostfixStrategy(
+                    this.unified,
+                    this.introspections,
+                    this.comparator,
+                );
             case "OnlyOrigin":
             default:
-                return new OnlyOriginStrategy(this.unified, this.introspections, this.comparator);
+                return new OnlyOriginStrategy(
+                    this.unified,
+                    this.introspections,
+                    this.comparator,
+                );
         }
     }
 
     private addOrigins() {
         let allSources: Array<types.Source<O>> = [];
-        _.forEach(this.unified, (i) => (allSources = allSources = allSources.concat(i.sources)));
+        _.forEach(
+            this.unified,
+            (i) => (allSources = allSources = allSources.concat(i.sources)),
+        );
 
         allSources.forEach((s) => {
             if (s.origin === s.addedFrom) {
@@ -68,29 +80,47 @@ export class Unificator<O extends string> {
         _.forEach(this.unified, (i) => {
             i.sources.forEach((s) => this.processSource(hash, s));
             i.controllers.forEach((c) => {
-                c.interplay.forEach((int) => this.processSource(hash, int, c.addedFrom));
+                c.interplay.forEach((int) =>
+                    this.processSource(hash, int, c.addedFrom),
+                );
 
                 c.methods.forEach((m) => {
                     this.processType(hash, m.params, c.addedFrom);
                     this.processType(hash, m.query, c.addedFrom);
-                    m.payload.forEach((p) => this.processType(hash, p, c.addedFrom));
-                    m.response.forEach((p) => this.processType(hash, p, c.addedFrom));
+                    m.payload.forEach((p) =>
+                        this.processType(hash, p, c.addedFrom),
+                    );
+                    m.response.forEach((p) =>
+                        this.processType(hash, p, c.addedFrom),
+                    );
                 });
             });
         });
     }
 
-    private processSource(hash: Record<O, Record<string, types.Source<O>>>, s: types.Source<O>, addedFrom?: O) {
+    private processSource(
+        hash: Record<O, Record<string, types.Source<O>>>,
+        s: types.Source<O>,
+        addedFrom?: O,
+    ) {
         if (s.shape.kind !== "Interface") {
             return;
         }
 
         const addedFromOrigin = addedFrom || s.addedFrom;
-        s.shape.fields.forEach((f) => this.processType(hash, f.type, addedFromOrigin));
-        s.shape.extends.forEach((e) => this.processType(hash, e, addedFromOrigin));
+        s.shape.fields.forEach((f) =>
+            this.processType(hash, f.type, addedFromOrigin),
+        );
+        s.shape.extends.forEach((e) =>
+            this.processType(hash, e, addedFromOrigin),
+        );
     }
 
-    private processType(hash: Record<O, Record<string, types.Source<O>>>, type: types.Type<O>, addedFrom: O) {
+    private processType(
+        hash: Record<O, Record<string, types.Source<O>>>,
+        type: types.Type<O>,
+        addedFrom: O,
+    ) {
         type.generics.forEach((g) => this.processType(hash, g.type, addedFrom));
 
         if (
@@ -107,16 +137,44 @@ export class Unificator<O extends string> {
 
         _.forEach(this.introspections, (introspections) =>
             _.forEach(introspections, (introspection) => {
-                if (introspection.addedFrom === addedFrom && introspection.origin === type.origin) {
-                    const sourceThatWasDeleted = introspection.sources.find((s) => s.shape.name === type.name);
+                if (
+                    introspection.addedFrom === addedFrom &&
+                    introspection.origin === type.origin
+                ) {
+                    const sourceThatWasDeleted = introspection.sources.find(
+                        (s) => s.shape.name === type.name,
+                    );
 
                     if (sourceThatWasDeleted) {
-                        this.unified[type.origin].sources.push(sourceThatWasDeleted);
+                        this.unified[type.origin].sources.push(
+                            sourceThatWasDeleted,
+                        );
                         hash[type.origin][type.name] = sourceThatWasDeleted;
-                        this.processSource(hash, sourceThatWasDeleted, addedFrom);
+                        this.processSource(
+                            hash,
+                            sourceThatWasDeleted,
+                            addedFrom,
+                        );
                     }
                 }
             }),
         );
+    }
+
+    private handleSourcesWithTheSameNameInAllOrigins() {
+        let allSources: Array<types.Source<O>> = [];
+        _.forEach(
+            this.unified,
+            (i) => (allSources = allSources = allSources.concat(i.sources)),
+        );
+        const byName = _.groupBy(allSources, (s) => s.shape.name);
+
+        _.forEach(byName, (g) => {
+            if (g.length <= 1) {
+                return;
+            }
+
+            g.forEach((s) => (s.shape.isDuplicate = true));
+        });
     }
 }
