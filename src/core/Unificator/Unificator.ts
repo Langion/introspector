@@ -67,7 +67,7 @@ export class Unificator<O extends string> {
     }
 
     private handleSourcesIfTheyDeletedFromAnotherOrigin() {
-        const hash = {} as Record<O, Record<string, types.Source<O>>>;
+        const hash = {} as Record<string, Record<string, types.Source<O>>>;
 
         _.forEach(this.unified, (i) => {
             if (!hash[i.origin]) {
@@ -117,7 +117,7 @@ export class Unificator<O extends string> {
     }
 
     private processType(
-        hash: Record<O, Record<string, types.Source<O>>>,
+        hash: Record<string, Record<string, types.Source<O>>>,
         type: types.Type<O>,
         addedFrom: O,
     ) {

@@ -1,6 +1,6 @@
 {
   "name": "@langion/introspector",
-  "version": "1.0.43",
+  "version": "1.0.44",
   "description": "Introspect Langion format",
   "homepage": "https://github.com/Langion/introspector#readme",
   "bugs": {
@@ -22,16 +22,16 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
-    "@langion/langion": "1.0.4",
+    "@langion/langion": "1.0.5",
     "@types/jsonpath": "0.2.0",
-    "@types/lodash": "4.14.119",
-    "@types/node": "10.12.15",
-    "jsonpath": "^1.0.0",
-    "lodash": "^4.17.11",
-    "ts-node": "^7.0.1"
+    "@types/lodash": "4.14.149",
+    "@types/node": "12.12.9",
+    "jsonpath": "^1.0.2",
+    "lodash": "^4.17.15",
+    "ts-node": "^8.5.2"
   },
   "devDependencies": {
-    "tslint": "^5.11.0",
-    "typescript": "^3.2.2"
+    "tslint": "^5.20.1",
+    "typescript": "^3.7.2"
   }
 }
